@@ -107,7 +107,8 @@
 ### `validate_aql(project_id=None, rql: str, deleted: bool = False) -> str`
 
 `GET /api/testcase/query/validate` → `AqlValidateResponseDto` `{valid, count}`. Дешёвая проверка перед
-`search_test_cases`; `count` — сколько кейсов попадёт в выборку.
+`search_test_cases`; `count` — сколько кейсов попадёт в выборку. `rql` обязателен: пустой даёт
+`{"ok": false, "error": "rql is required"}` без запроса.
 
 ### `create_test_case(name: str, project_id=None, description=None, precondition=None, postcondition=None,
 expected_result=None, status_id=None, workflow_id=None, test_layer_id=None, tags_json=None, links_json=None,
@@ -187,7 +188,8 @@ attachment_id: int = None, shared_step_id: int = None) -> str`
 
 ### `get_launch_statistic(launch_id: int) -> str`
 
-`GET /api/launch/{launch_id}/statistic` — сводка по статусам. Дешевле, чем листать результаты.
+`GET /api/launch/{launch_id}/statistic` → массив `TestStatusCount` (`{status, count}`), на выходе
+`{ok, launchId, statistic: {passed: n, failed: n, …}}`. Дешевле, чем листать результаты.
 
 ### `list_test_results(launch_id: int, page=0, size=50, sort=None) -> str`
 
@@ -196,7 +198,10 @@ message, trace, start, stop}`.
 
 ### `get_test_result(test_result_id: int) -> str`
 
-`GET /api/testresult/{test_result_id}` → `TestResultDto` (белый список, без `*Html`).
+`GET /api/testresult/{test_result_id}` → `TestResultDto` (белый список, без `*Html`): `id`, `name`,
+`fullName`, `launchId`, `projectId`, `testCaseId`, `status`, `duration`, `message`, `trace`, `start`,
+`stop`, `description`, `precondition`, `postcondition`, `expectedResult`, `tags`, `links`, `assignee`,
+`testedBy`, `manual`, `flaky`, `createdDate`, `lastModifiedDate`.
 
 ### `create_launch(name: str, project_id=None, autoclose=None, release_id=None, tags_json=None, links_json=None) -> str`
 

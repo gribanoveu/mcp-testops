@@ -588,6 +588,26 @@ def search_test_cases(
     return {"ok": True, "projectId": pid, "rql": query, **res}
 
 
+@mcp.tool()
+@_guard
+def validate_aql(project_id: int | None = None, rql: str = "", deleted: bool = False) -> str:
+    """Check an AQL query (the API calls it rql) before running search_test_cases.
+
+    Returns {ok, valid, count}: count is how many test cases the query selects, so a typo
+    is caught before a real search. project_id defaults to TESTOPS_PROJECT_ID;
+    deleted=true counts removed cases too. rql is required.
+    """
+    pid = _pid(project_id)
+    if not (rql or "").strip():
+        raise TestOpsError("rql is required")
+    data = _api(
+        "GET",
+        "/api/testcase/query/validate",
+        params={"projectId": pid, "rql": rql, "deleted": True if deleted else None},
+    )
+    return {"ok": True, "projectId": pid, **_pick(data, ("valid", "count"))}
+
+
 @_write
 def create_test_case(
     name: str,
@@ -846,6 +866,17 @@ def get_launch(launch_id: int) -> str:
 
 @mcp.tool()
 @_guard
+def get_launch_statistic(launch_id: int) -> str:
+    """Status counts of a launch as {passed: n, failed: n, broken: n, skipped: n, ...}.
+
+    Cheaper than listing the results: one request instead of paging through them.
+    """
+    data = _api("GET", f"/api/launch/{launch_id}/statistic")
+    return {"ok": True, "launchId": launch_id, "statistic": _statistic(data)}
+
+
+@mcp.tool()
+@_guard
 def list_test_results(
     launch_id: int,
     page: int = 0,
@@ -862,6 +893,46 @@ def list_test_results(
         for item in res["content"]
     ]
     return {"ok": True, "launchId": launch_id, **res}
+
+
+TEST_RESULT_KEYS = (
+    "id",
+    "name",
+    "fullName",
+    "launchId",
+    "projectId",
+    "testCaseId",
+    "status",
+    "duration",
+    "message",
+    "trace",
+    "start",
+    "stop",
+    "description",
+    "precondition",
+    "postcondition",
+    "expectedResult",
+    "tags",
+    "links",
+    "assignee",
+    "testedBy",
+    "manual",
+    "flaky",
+    "createdDate",
+    "lastModifiedDate",
+)
+
+
+@mcp.tool()
+@_guard
+def get_test_result(test_result_id: int) -> str:
+    """Get one test result: status, duration, message, trace and the text fields.
+
+    The *Html duplicates are dropped. For the small table of a whole launch use
+    list_test_results or get_launch_statistic.
+    """
+    data = _api("GET", f"/api/testresult/{test_result_id}")
+    return {"ok": True, **_pick(data, TEST_RESULT_KEYS)}
 
 
 @_write

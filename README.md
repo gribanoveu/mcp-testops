@@ -75,5 +75,5 @@ python -m mcp_testops                          # stdio; без TESTOPS_TOKEN п�
 ```
 
 Переменные окружения, таблица инструментов и ограничения — в `docs/01-contract.md` §3 и `docs/03-tools-spec.md`;
-полный README пакета появляется в M4. Тесты — `pytest -q` (сейчас 55); линия SDK v2 зафиксирована
+полный README пакета появляется в M4. Тесты — `pytest -q` (сейчас 59); линия SDK v2 зафиксирована
 в `pyproject.toml`. Что сделано на каждом этапе — `CHANGELOG.md`.

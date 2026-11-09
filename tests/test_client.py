@@ -211,6 +211,71 @@ def test_search_without_query_is_an_error(api):
     assert answer == {"ok": False, "error": "rql or name is required"}
 
 
+def test_validate_aql_sends_query(api):
+    seen = {}
+
+    def handler(request):
+        seen["path"] = request.url.path
+        seen["query"] = dict(request.url.params)
+        return httpx.Response(200, json={"valid": True, "count": 7})
+
+    api(handler)
+    answer = json.loads(testops.validate_aql(project_id=65, rql='name ~ "l"'))
+    assert answer == {"ok": True, "projectId": 65, "valid": True, "count": 7}
+    assert seen["path"] == "/api/testcase/query/validate"
+    assert seen["query"]["projectId"] == "65"
+    assert seen["query"]["rql"] == 'name ~ "l"'
+
+
+def test_validate_aql_requires_rql(api):
+    api(lambda request: pytest.fail("no request expected"))
+    assert json.loads(testops.validate_aql(project_id=65)) == {"ok": False, "error": "rql is required"}
+
+
+def test_get_launch_statistic_counts(api):
+    api(
+        lambda request: httpx.Response(
+            200, json=[{"status": "passed", "count": 3}, {"status": "failed", "count": 1}]
+        )
+    )
+    answer = json.loads(testops.get_launch_statistic(4))
+    assert answer == {"ok": True, "launchId": 4, "statistic": {"passed": 3, "failed": 1}}
+
+
+def test_get_test_result_strips_html(api):
+    api(
+        lambda request: httpx.Response(
+            200,
+            json={
+                "id": 9,
+                "name": "Login",
+                "status": "failed",
+                "message": "boom",
+                "trace": "stack",
+                "description": "text",
+                "descriptionHtml": "<p>text</p>",
+                "preconditionHtml": "<p>pre</p>",
+                "launchId": 4,
+                "testCaseId": 42,
+                "duration": 100,
+            },
+        )
+    )
+    answer = json.loads(testops.get_test_result(9))
+    assert answer == {
+        "ok": True,
+        "id": 9,
+        "name": "Login",
+        "status": "failed",
+        "message": "boom",
+        "trace": "stack",
+        "description": "text",
+        "launchId": 4,
+        "testCaseId": 42,
+        "duration": 100,
+    }
+
+
 def test_search_escapes_quotes_in_name(api):
     seen = {}
 

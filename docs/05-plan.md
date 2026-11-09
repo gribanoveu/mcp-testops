@@ -68,16 +68,19 @@
    от `api_request`: без справочника стало нечем получить `statusId`. У эндпоинта нет `projectId`.
 2. `list_reference(kind, project_id?, query?, page, size)` — `workflow | testlayer | custom_field | tag`
    (`/api/workflow`, `/api/testlayer`, `/api/project/{projectId}/cf`, `/api/tag`). Сделано там же.
-3. `validate_aql(project_id?, rql, deleted)` — `/api/testcase/query/validate`.
-4. `get_launch_statistic(launch_id)` — `/api/launch/{id}/statistic`.
-5. `get_test_result(test_result_id)` — `/api/testresult/{id}` с белым списком полей.
+3. `validate_aql(project_id?, rql, deleted)` — `/api/testcase/query/validate`. Сделано.
+4. `get_launch_statistic(launch_id)` — `/api/launch/{id}/statistic`. Сделано.
+5. `get_test_result(test_result_id)` — `/api/testresult/{id}` с белым списком полей. Сделано.
 6. `list_launches`: терпимый разбор `oneOf` (`LaunchDto` и `LaunchPreviewDto`), компактная сводка
-   `{id, name, closed, createdDate, statistic}`.
-7. Компактные ответы: убрать `*Html`, для листингов — без `indent`.
+   `{id, name, closed, createdDate, statistic}`. Сделано в M1.
+7. Компактные ответы: убрать `*Html`, для листингов — без `indent`. Сделано в M1.
 
 **Критерии приёмки:**
-- сценарий «найти кейсы по тегу → открыть кейс → прочитать шаги → найти прогоны с этим кейсом»
-  выполняется только именованными инструментами, без обходных путей;
+- сценарий «найти кейсы по тегу → открыть кейс → прочитать шаги → найти прогоны проекта и их
+  результаты» выполняется только именованными инструментами, без обходных путей;
+- «в каких прогонах гонялся этот кейс» **пока не отвечается**: для этого есть
+  `GET /api/testcase/history?projectId&testCaseId` → `PageTestResultHistoryDto` (в каждом элементе
+  вложен `launch`), но такого инструмента в наборе нет — `../docs/06-open-questions.md`, вопрос 13;
 - тест на каждый новый инструмент с записанным ответом (MockTransport), включая форму `LaunchPreviewDto`;
 - живой смоук: `list_projects` → `list_reference("workflow", 65)` → `search_test_cases(rql='name ~ "a"')`.
 

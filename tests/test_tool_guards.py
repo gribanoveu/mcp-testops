@@ -10,10 +10,12 @@ import mcp_testops
 
 READ_TOOLS = [
     "get_launch",
+    "get_launch_statistic",
     "get_project",
     "get_test_case",
     "get_test_case_steps",
     "get_test_plan",
+    "get_test_result",
     "list_launches",
     "list_projects",
     "list_reference",
@@ -22,6 +24,7 @@ READ_TOOLS = [
     "list_test_plans",
     "list_test_results",
     "search_test_cases",
+    "validate_aql",
 ]
 
 WRITE_TOOLS = [
