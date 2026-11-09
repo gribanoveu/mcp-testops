@@ -112,9 +112,11 @@ jobs:
 
   npm:
     # `npx -y @gribanoveu/mcp-testops` needs the release assets, so this runs after them.
-    # Publishing itself needs an NPM_TOKEN secret; without it the job only reports.
+    # Registry publishing must not fail the release: a wrong or missing token is reported by
+    # this job's status, while the binaries and the wheel stay downloadable.
     needs: [publish]
     if: always() && needs.publish.result == 'success'
+    continue-on-error: true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
