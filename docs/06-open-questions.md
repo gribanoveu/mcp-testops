@@ -59,6 +59,13 @@ https://testops.moscow.alfaintra.net/api/project?size=1` → `200`. Контро
 **Влияет на:** `scenario_json` и `add_test_case_step` (в документе `02-domain-model.md` §3.3 значения
 `body`/`expected_body` — допущение).
 
+**Найдено в M1.** `TestCaseScenarioV2Dto.steps` объявлен как `oneOf` из `AttachmentStepDto`,
+`BodyStepDto`, `ExpectedBodyStepDto`, `SharedStepStepDto`, но все четыре различаются только
+необязательными полями, а обязательный у них один и тот же — `type` из `ScenarioStepDto` (свободная
+строка). Поэтому любой шаг валиден сразу по всем четырём схемам, `oneOf` требует ровно одну — и
+отвергает **любой** шаг. Контрактный тест валидирует шаг по каждой из четырёх схем отдельно
+(`tests/test_contract.py`). Если стенд начнёт перечислять значения `type` — `oneOf` станет рабочим.
+
 ## 6. Максимальный `size`
 
 **Что неизвестно.** Схема говорит `minimum: 1` и не задаёт максимум. Spring Data часто ограничивает
@@ -119,3 +126,16 @@ https://testops.moscow.alfaintra.net/api/project?size=1` → `200`. Контро
 и убедиться, что в запуске ровно один результат.
 
 **Влияет на:** `run_test_cases` (`ids` → `leafsInclude`) и на любые выборки по дереву.
+
+## 12. Что означает `TestCaseTreeSelectionDto.search`
+
+**Что неизвестно.** Документ `03-tools-spec.md` обещал в `selection` поле `rql`, но в схеме его нет:
+у `TestCaseTreeSelectionDto` есть `search` (строка), `filterId`, `path`, `leafsInclude/leafsExclude`,
+`treeId`, `jobId`. Что принимает `search` — AQL, подстроку имени или json-выборку — спецификация
+не говорит (описаний у полей нет).
+
+**Как закрыть:** `POST /api/testcase/bulk/run/new` с `selection: {"projectId": 65, "search": "…"}`
+и посмотреть на состав созданного запуска; сравнить с `filterId` и `leafsInclude`.
+
+**Влияет на:** появится ли у `run_test_cases` аргумент `rql`; до ответа его нет — неизвестное поле
+в тело не отправляем.

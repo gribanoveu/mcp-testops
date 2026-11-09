@@ -96,10 +96,11 @@
 - `as_tree=False`: отдаём `scenarioSteps` как есть (словарь по id).
 - Вложение `attachments` (толстые DTO) не отдаём — только `attachmentId`; за содержимым — отдельно.
 
-### `search_test_cases(project_id=None, rql: str, deleted: bool = False, page=0, size=50, sort=None) -> str`
+### `search_test_cases(project_id=None, rql: str = "", name: str = "", deleted: bool = False, page=0, size=50, sort="") -> str`
 
 `GET /api/testcase/__search` с `projectId`, `rql`, `deleted`, `page`, `size`, `sort?` → `PageTestCaseDto`.
-`rql` **обязателен**: без AQL используем `list_test_cases`. Docstring — с примерами:
+Нужен один из `rql` или `name`: **`name` превращается в AQL `name ~ "…"` на сервере**, клиентской
+выгрузки проекта нет (Д2), без обоих — ошибка `rql or name is required`. Docstring — с примерами:
 `name ~ "логин"`, `status.name = "Черновик"`, `tag.name = "smoke"`. Примеры пометить как проверяемые
 на стенде (`06-open-questions.md`, вопрос 2), потому что синтаксис AQL спецификацией не описан.
 
@@ -108,7 +109,7 @@
 `GET /api/testcase/query/validate` → `AqlValidateResponseDto` `{valid, count}`. Дешёвая проверка перед
 `search_test_cases`; `count` — сколько кейсов попадёт в выборку.
 
-### `create_test_case(project_id=None, name: str, description=None, precondition=None, postcondition=None,
+### `create_test_case(name: str, project_id=None, description=None, precondition=None, postcondition=None,
 expected_result=None, status_id=None, workflow_id=None, test_layer_id=None, tags_json=None, links_json=None,
 members_json=None, custom_fields_json=None, scenario_json=None, automated=None) -> str`
 
@@ -158,7 +159,7 @@ attachment_id: int = None, shared_step_id: int = None) -> str`
 
 `GET /api/testplan/{test_plan_id}` → `{id, name, projectId, baseRql, testCasesCount, treeSelection}`.
 
-### `create_test_plan(project_id=None, name: str, base_rql=None, tree_id=None, tree_selection_json=None) -> str`
+### `create_test_plan(name: str, project_id=None, base_rql=None, tree_id=None, tree_selection_json=None) -> str`
 
 `POST /api/testplan`, тело `TestPlanCreateDto` (`name`, `projectId`, `baseRql`, `treeId`, `treeSelection`).
 
@@ -197,7 +198,7 @@ message, trace, start, stop}`.
 
 `GET /api/testresult/{test_result_id}` → `TestResultDto` (белый список, без `*Html`).
 
-### `create_launch(project_id=None, name: str, autoclose=None, release_id=None, tags_json=None, links_json=None) -> str`
+### `create_launch(name: str, project_id=None, autoclose=None, release_id=None, tags_json=None, links_json=None) -> str`
 
 `POST /api/launch`, тело `LaunchCreateDto` (`name`, `projectId` обязательны). Возвращаем `{ok, id, name}`.
 
@@ -220,8 +221,8 @@ custom_fields_json=None) -> str`
 возвращаем понятную ошибку со списком допустимых значений. `duration`, `start`, `stop` — миллисекунды
 (int64).
 
-### `run_test_cases(launch_name: str, project_id=None, leafs_include: str = None, ids: str = None,
-filter_id: int = None, rql: str = None, assignees: str = None, tags_json=None, release_id: int = None) -> str`
+### `run_test_cases(launch_name: str, project_id=None, leafs_include: str = "", ids: str = "",
+filter_id: int = None, assignees: str = "", tags_json=None, release_id: int = None) -> str`
 
 `POST /api/testcase/bulk/run/new`, тело `TestCaseBulkRunNewLaunchDto`.
 
@@ -238,7 +239,10 @@ filter_id: int = None, rql: str = None, assignees: str = None, tags_json=None, r
 - `leafs_include` — JSON-массив, если нужен явный контроль;
 - **поле называется `leafsInclude`**; `leafIds` в `TestCaseTreeSelectionDto` не существует — на этом
   сломан текущий код (см. `04-current-implementation.md`, дефект 1);
-- вместо `ids` можно задать `filter_id` или `rql` (тогда `selection` берёт выборку с сервера);
+- вместо `ids` можно задать `filter_id` (тогда `selection` берёт выборку с сервера);
+- **поля `rql` в `TestCaseTreeSelectionDto` нет** — есть `search` (строка), семантика не подтверждена
+  (`06-open-questions.md`, вопрос 12), поэтому аргумента `rql` у инструмента нет;
+- `tags` здесь — `LaunchTagDto` (а не `TestTagDto`), форма та же `{id, name}`;
 - ответ — `LaunchDto`: возвращаем `{ok, launchId, name, url?}`; docstring предупреждает, что прогон
   создаётся **с ручными результатами** (по одному на кейс).
 
