@@ -63,10 +63,16 @@
 - Никакого внешнего репозитория: работа и коммиты — там, где лежит эта папка. `reference/` —
   снимок примера для чтения, он может устареть и не обновляется.
 
-## Проект в этой папке (M0–M1)
+## MCP-сервер `mcp-testops`
 
-Каркас поднят рядом с аналитикой: `pyproject.toml`, `src/mcp_testops/`. Линия SDK — **v2**:
-`mcp>=2,<3`, `from mcp.server import MCPServer`; проверено на `mcp` 2.3.0. HTTP — `httpx`.
+Stdio-сервер MCP поверх API Allure TestOps. Снимок спеки — `openapi/api-docs.json`: `allure-testops-service`
+`527u04` (ветка `527u04`), `info.version` = `527u04`, снято **2026-11-09**. Стек — официальный SDK `mcp`
+v2 (`MCPServer` из `mcp.server`, проверено на 2.3.0) и `httpx`; транспорт stdio, портов сервер не слушает.
+
+**30 инструментов: 17 read + 13 write.** Generic-инструмента «любой путь под `/api`» нет сознательно:
+чего не хватает, добавляется именованным инструментом с телом из схемы (`docs/03-tools-spec.md` §7).
+
+### Установка и запуск
 
 ```bash
 python -m venv .venv && . .venv/bin/activate   # Windows: .venv\Scripts\activate
@@ -74,6 +80,88 @@ pip install -e ".[test]" "mcp[cli]"             # mcp[cli] — команды mc
 python -m mcp_testops                          # stdio; без TESTOPS_TOKEN падает с понятным сообщением
 ```
 
-Переменные окружения, таблица инструментов и ограничения — в `docs/01-contract.md` §3 и `docs/03-tools-spec.md`;
-полный README пакета появляется в M4. Тесты — `pytest -q` (сейчас 66); линия SDK v2 зафиксирована
-в `pyproject.toml`. Что сделано на каждом этапе — `CHANGELOG.md`.
+### Переменные окружения
+
+| Переменная | Обязательна | По умолчанию | Смысл |
+|---|---|---|---|
+| `TESTOPS_TOKEN` | да | — | API-токен; без него старт прерывается с `TESTOPS_TOKEN is not set` |
+| `TESTOPS_BASE_URL` | нет | `https://testops.moscow.alfaintra.net` | хост стенда |
+| `TESTOPS_PROJECT_ID` | нет | — | проект по умолчанию для инструментов без `project_id` |
+| `TESTOPS_VERIFY_SSL` | нет | `false` | проверка TLS; внутренний стенд на самоподписанном CA |
+| `TESTOPS_TIMEOUT` | нет | `60` | таймаут запроса, секунды |
+| `TESTOPS_READ_ONLY` | нет | `false` | `true` — регистрируются только read-инструменты (17 из 30) |
+| `MCP_SERVER_NAME` | нет | `testops` | имя сервера в клиенте |
+
+### Подключение клиента (пример)
+
+Форма блока `mcp` — как в вашем клиенте; ниже — локальный сервер, который клиент запускает подпроцессом.
+Токен в конфиг попадает только реальным значением в локальном файле, в репозиторий — никогда:
+
+```json
+{
+  "mcp": {
+    "testops": {
+      "type": "local",
+      "command": ["python", "-m", "mcp_testops"],
+      "environment": {
+        "TESTOPS_BASE_URL": "https://testops.moscow.alfaintra.net",
+        "TESTOPS_TOKEN": "****",
+        "TESTOPS_PROJECT_ID": "65",
+        "TESTOPS_READ_ONLY": "true"
+      }
+    }
+  }
+}
+```
+
+### Инструменты
+
+| Домен | Инструменты |
+|---|---|
+| Проекты | `list_projects`, `get_project` |
+| Кейсы | `list_test_cases`, `get_test_case`, `get_test_case_steps`, `get_test_case_history`, `search_test_cases`, `validate_aql`, `create_test_case`, `update_test_case`, `delete_test_case`, `add_test_case_step` |
+| Тест-планы | `list_test_plans`, `get_test_plan`, `create_test_plan`, `update_test_plan`, `delete_test_plan` |
+| Запуски и результаты | `list_launches`, `get_launch`, `get_launch_statistic`, `list_test_results`, `get_test_result`, `create_launch`, `close_launch`, `reopen_launch`, `delete_launch`, `add_test_result`, `run_test_cases` |
+| Справочники | `list_statuses`, `list_reference` |
+
+Сигнатуры, тела и что инструмент возвращает — `docs/03-tools-spec.md`. Ответы компактные: HTML-дубли
+(`*Html`) вырезаны, листинги без `indent`.
+
+### Ограничения и риски
+
+- **Авторизация не подтверждена спекой:** в снимке нет `security`/`securitySchemes`; используется
+  `Authorization: Api-Token <token>` — допущение (`docs/06-open-questions.md`, вопрос 1). При 401/403
+  первым делом проверить, не нужен ли `Bearer`.
+- **`TESTOPS_VERIFY_SSL=false` по умолчанию** — осознанное послабление для самоподписанного CA: TLS
+  не проверяется. На стенде с валидным сертификатом выставлять `true`.
+- **`TESTOPS_READ_ONLY`** скрывает 13 write-инструментов из 30; на рабочем проекте включать явно.
+- **Нет generic-вызова и загрузки файлов:** дерево, общие шаги, дефекты, вложения и импорт результатов
+  через MCP недоступны; для вложений и архивов нужен отдельный именованный инструмент (multipart
+  JSON-строкой не собрать).
+- **Удаление кейса — мягкое:** `DELETE /api/testcase/{id}` отвечает `202` и, судя по схеме, уводит кейс в
+  корзину; восстановление не выведено (`docs/06-open-questions.md`, вопрос 8).
+- **Логи:** только метод, путь, код и длительность; токен, заголовки и тела не пишутся. Логгер `httpx`
+  при старте сервера приглушён — он сыплет полными URL вместе с текстом `rql`.
+- **Аналитика в `docs/`** могла устареть относительно кода — источник правды `openapi/api-docs.json`
+  и контрактные тесты.
+
+### Проверка и разработка
+
+```bash
+python -m py_compile src/mcp_testops/*.py src/mcp_testops/tools/*.py
+pytest -q                                        # 68 тестов: контракт, MockTransport, гарды
+mcp version                                      # версия официального SDK
+mcp dev src/mcp_testops/__init__.py              # Inspector: что увидит модель
+python -m mcp_testops                            # stdio, читает TESTOPS_* из env
+```
+
+Переснять снимок спеки перед этапом и посмотреть дифф:
+
+```bash
+scripts/refresh_spec.sh          # curl /api-docs/ в openapi/api-docs.json.new + дифф путей и схем
+```
+
+Скрипт не перезаписывает `openapi/api-docs.json`: сначала читаются версия и дифф, потом снимок меняется
+и гоняются `pytest -q`. Подробнее — `docs/06-open-questions.md`, вопрос 10.
+
+Что сделано на каждом этапе — `CHANGELOG.md`.

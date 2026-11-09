@@ -1,5 +1,6 @@
 """HTTP plumbing: one client per process, retries and the Page*Dto envelope."""
 
+import logging
 import time
 from typing import Any
 
@@ -20,6 +21,14 @@ from .config import (
 
 class TestOpsError(Exception):
     """Returned to the model as {"ok": false, "error": ...}, never raised past a tool."""
+
+
+log = logging.getLogger("mcp_testops")
+
+
+def _configure_logging() -> None:
+    """Silence third-party request logs: httpx writes whole URLs, including rql text."""
+    logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 _client: httpx.Client | None = None
@@ -54,12 +63,15 @@ def _send(method: str, path: str, params: dict | None = None, body: Any = None) 
     """Retry only idempotent calls: a replayed POST creates a second entity."""
     attempts = RETRY_ATTEMPTS if method in ("GET", "HEAD") else 1
     for attempt in range(attempts):
+        started = time.monotonic()
         try:
             resp = _http().request(method, path, params=params, json=body)
         except httpx.TransportError:
             if attempt + 1 == attempts:
                 raise
         else:
+            # Method, path, status and time only: no query, no headers, no body.
+            log.info("%s %s -> %s in %.0f ms", method, path, resp.status_code, (time.monotonic() - started) * 1000)
             if resp.status_code not in RETRY_STATUSES or attempt + 1 == attempts:
                 return resp
         time.sleep(RETRY_BACKOFF * 2**attempt)

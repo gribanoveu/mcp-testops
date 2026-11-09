@@ -17,7 +17,7 @@ from .bodies import (
     _test_plan_body,
     _test_result_body,
 )
-from .client import TestOpsError, _api, _http, _paged
+from .client import TestOpsError, _api, _configure_logging, _http, _paged
 from .config import TOKEN
 from .server import mcp
 from .tools.launches import (
@@ -96,4 +96,5 @@ def main() -> None:
     """Run the stdio server; refuses to start without a token."""
     if not TOKEN:
         raise SystemExit("TESTOPS_TOKEN is not set")
+    _configure_logging()
     mcp.run()

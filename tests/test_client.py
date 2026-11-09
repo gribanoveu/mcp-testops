@@ -1,6 +1,7 @@
 """Client behaviour against a mocked stand: pagination, oneOf launches, 202/204, errors, retries."""
 
 import json
+import logging
 
 import httpx
 import pytest
@@ -209,6 +210,21 @@ def test_search_without_query_is_an_error(api):
     api(lambda request: pytest.fail("no request expected"))
     answer = json.loads(testops.search_test_cases(project_id=65))
     assert answer == {"ok": False, "error": "rql or name is required"}
+
+
+def test_logs_method_path_and_status_only(api, caplog):
+    api(lambda request: httpx.Response(200, json={"id": 65, "name": "P", "isPublic": True, "isVersioned": True}))
+    with caplog.at_level(logging.INFO, logger="mcp_testops"):
+        json.loads(testops.get_project(65))
+    text = "\n".join(record.getMessage() for record in caplog.records)
+    assert "GET /api/project/65 -> 200" in text
+    assert "Api-Token" not in text and "Authorization" not in text
+    assert "in " in text and "ms" in text
+
+
+def test_httpx_request_log_is_silenced():
+    testops._configure_logging()
+    assert logging.getLogger("httpx").level == logging.WARNING
 
 
 def test_delete_test_case_sends_force(api):
