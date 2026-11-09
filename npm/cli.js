@@ -29,6 +29,12 @@ function platformName() {
 }
 
 const platform = platformName();
+if (platform === "darwin-x64") {
+  fail(
+    "no Intel macOS binary is published; use `uvx mcp-testops` or the wheel from the release " +
+      "(https://github.com/gribanoveu/mcp-testops/releases)",
+  );
+}
 const exe = process.platform === "win32" ? ".exe" : "";
 const asset = `mcp-testops-${platform}${exe}`;
 const cacheDir = join(homedir(), ".cache", "mcp-testops", pkg.version);

@@ -46,10 +46,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # macOS 13 is retired. macos-latest is arm64; macos-15-intel is the standard
-          # Intel label (macos-26-intel is not available to every account).
+          # macOS 13 is retired and macos-15-intel builds a binary that dies on a bundled
+          # OpenSSL mismatch (cryptography wants _SSL_get0_group_name). Intel Macs are served
+          # by the wheel and uvx; the launcher says so instead of failing obscurely.
           - { platform: darwin-arm64, os: macos-latest }
-          - { platform: darwin-x64, os: macos-15-intel }
           - { platform: linux-x64, os: ubuntu-latest }
           - { platform: linux-arm64, os: ubuntu-24.04-arm }
           - { platform: win32-x64, os: windows-latest, exe: .exe }

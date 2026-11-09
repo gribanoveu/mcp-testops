@@ -70,17 +70,19 @@ chmod +x mcp-testops-<platform>
 | Система | Файл ассета |
 |---|---|
 | macOS Apple Silicon | `mcp-testops-darwin-arm64` |
-| macOS Intel | `mcp-testops-darwin-x64` |
 | Linux x86_64 | `mcp-testops-linux-x64` |
 | Linux arm64 | `mcp-testops-linux-arm64` |
 | Windows x86_64 | `mcp-testops-win32-x64.exe` |
+
+Для Intel Mac готового бинарника нет: сборка под x64 на раннере GitHub падает на несовпадении OpenSSL
+в `cryptography`. На Intel Mac ставьте колесо (пункт 3) или используйте `uvx mcp-testops`.
 
 ### 2. Пакет Python
 
 Нужен Python 3.10+. Колесо `py3-none-any` — одно на все платформы:
 
 ```bash
-pip install https://github.com/gribanoveu/mcp-testops/releases/download/v0.1.2/mcp_testops-0.1.2-py3-none-any.whl
+pip install https://github.com/gribanoveu/mcp-testops/releases/download/v0.1.3/mcp_testops-0.1.3-py3-none-any.whl
 python -m mcp_testops
 ```
 

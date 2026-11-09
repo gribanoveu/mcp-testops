@@ -27,6 +27,7 @@ Client configuration — the same `command`/`args`/`env` shape any local MCP ser
 ```
 
 The binary goes to `~/.cache/mcp-testops/<version>/` on first run; later runs use it.
-Platforms: darwin-arm64, darwin-x64, linux-x64, linux-arm64, win32-x64.
+Platforms: darwin-arm64, linux-x64, linux-arm64, win32-x64. Intel macOS is not built (the
+generated binary dies on an OpenSSL mismatch on the runner) — use `uvx mcp-testops` there.
 
 Everything the launcher says goes to stderr — stdout is the MCP protocol.
