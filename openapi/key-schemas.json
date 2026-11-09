@@ -1,0 +1,3197 @@
+{
+ "AqlValidateResponseDto": {
+  "properties": {
+   "count": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "valid": {
+    "type": "boolean"
+   }
+  },
+  "type": "object"
+ },
+ "AssignmentTypeDto": {
+  "enum": [
+   "BY_COUNT",
+   "BY_DURATION"
+  ],
+  "type": "string"
+ },
+ "AsyncJobDto": {
+  "properties": {
+   "createdDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "lastModifiedDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "name": {
+    "type": "string"
+   },
+   "status": {
+    "$ref": "#/components/schemas/AsyncJobStatusDto"
+   }
+  },
+  "type": "object"
+ },
+ "AsyncJobStatusDto": {
+  "enum": [
+   "IN_PROGRESS",
+   "FAILED",
+   "COMPLETED",
+   "STOPPED",
+   "CANCELLED"
+  ],
+  "type": "string"
+ },
+ "AttachmentRow": {
+  "discriminator": {
+   "propertyName": "entity"
+  },
+  "properties": {
+   "contentLength": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "contentType": {
+    "type": "string"
+   },
+   "entity": {
+    "type": "string"
+   },
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "name": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "entity"
+  ],
+  "type": "object"
+ },
+ "AttachmentStepDto": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/ScenarioStepDto"
+   }
+  ],
+  "properties": {
+   "attachmentId": {
+    "format": "int64",
+    "type": "integer"
+   }
+  }
+ },
+ "Attrs": {
+  "properties": {
+   "language": {
+    "type": "string"
+   }
+  },
+  "type": "object"
+ },
+ "BodyStepDto": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/ScenarioStepDto"
+   }
+  ],
+  "properties": {
+   "body": {
+    "type": "string"
+   },
+   "bodyJson": {
+    "oneOf": [
+     {
+      "$ref": "#/components/schemas/DefaultTextMarkupDocument"
+     }
+    ]
+   },
+   "expectedResultSteps": {
+    "items": {
+     "oneOf": [
+      {
+       "$ref": "#/components/schemas/AttachmentStepDto"
+      },
+      {
+       "$ref": "#/components/schemas/BodyStepDto"
+      },
+      {
+       "$ref": "#/components/schemas/ExpectedBodyStepDto"
+      },
+      {
+       "$ref": "#/components/schemas/SharedStepStepDto"
+      }
+     ]
+    },
+    "type": "array"
+   },
+   "steps": {
+    "items": {},
+    "type": "array"
+   }
+  }
+ },
+ "BoldMark": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/TextMark"
+   }
+  ]
+ },
+ "CategoryDto": {
+  "properties": {
+   "color": {
+    "type": "string"
+   },
+   "createdBy": {
+    "type": "string"
+   },
+   "createdDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "description": {
+    "type": "string"
+   },
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "lastModifiedBy": {
+    "type": "string"
+   },
+   "lastModifiedDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "name": {
+    "type": "string"
+   },
+   "projectId": {
+    "format": "int64",
+    "type": "integer"
+   }
+  },
+  "required": [
+   "color",
+   "id",
+   "name"
+  ],
+  "type": "object"
+ },
+ "CodeBlockDocumentNode": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/DocumentNode"
+   }
+  ],
+  "properties": {
+   "attrs": {
+    "$ref": "#/components/schemas/Attrs"
+   },
+   "content": {
+    "items": {
+     "$ref": "#/components/schemas/TextParagraphNode"
+    },
+    "type": "array"
+   }
+  }
+ },
+ "CodeMark": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/TextMark"
+   }
+  ]
+ },
+ "CustomFieldDto": {
+  "properties": {
+   "archived": {
+    "type": "boolean"
+   },
+   "createdBy": {
+    "type": "string"
+   },
+   "createdDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "defaultCustomFieldValueId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "lastModifiedBy": {
+    "type": "string"
+   },
+   "lastModifiedDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "locked": {
+    "type": "boolean"
+   },
+   "name": {
+    "type": "string"
+   },
+   "required": {
+    "type": "boolean"
+   },
+   "singleSelect": {
+    "deprecated": true,
+    "type": "boolean"
+   }
+  },
+  "required": [
+   "id",
+   "name"
+  ],
+  "type": "object"
+ },
+ "CustomFieldValueWithCfDto": {
+  "properties": {
+   "customField": {
+    "$ref": "#/components/schemas/CustomFieldDto"
+   },
+   "global": {
+    "type": "boolean"
+   },
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "name": {
+    "type": "string"
+   }
+  },
+  "type": "object"
+ },
+ "DefaultTextMarkupDocument": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/TextMarkupDocument"
+   }
+  ],
+  "properties": {
+   "content": {
+    "items": {
+     "oneOf": [
+      {
+       "$ref": "#/components/schemas/CodeBlockDocumentNode"
+      },
+      {
+       "$ref": "#/components/schemas/ParagraphDocumentNode"
+      }
+     ]
+    },
+    "type": "array"
+   }
+  }
+ },
+ "DocumentNode": {
+  "discriminator": {
+   "propertyName": "type"
+  },
+  "properties": {
+   "type": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "type"
+  ]
+ },
+ "EnvVarDto": {
+  "properties": {
+   "createdBy": {
+    "type": "string"
+   },
+   "createdDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "lastModifiedBy": {
+    "type": "string"
+   },
+   "lastModifiedDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "name": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "id"
+  ],
+  "type": "object"
+ },
+ "EnvVarValueDto": {
+  "properties": {
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "name": {
+    "type": "string"
+   },
+   "variable": {
+    "$ref": "#/components/schemas/EnvVarDto"
+   }
+  },
+  "required": [
+   "id",
+   "variable"
+  ],
+  "type": "object"
+ },
+ "EnvironmentSetDto": {
+  "properties": {
+   "values": {
+    "items": {
+     "$ref": "#/components/schemas/EnvVarValueDto"
+    },
+    "type": "array",
+    "uniqueItems": true
+   }
+  },
+  "type": "object"
+ },
+ "ExpectedBodyStepDto": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/ScenarioStepDto"
+   }
+  ],
+  "properties": {
+   "body": {
+    "type": "string"
+   },
+   "bodyJson": {
+    "oneOf": [
+     {
+      "$ref": "#/components/schemas/DefaultTextMarkupDocument"
+     }
+    ]
+   }
+  }
+ },
+ "ExternalLinkDto": {
+  "properties": {
+   "name": {
+    "type": "string"
+   },
+   "type": {
+    "type": "string"
+   },
+   "url": {
+    "type": "string"
+   }
+  },
+  "type": "object"
+ },
+ "IdAndNameOnlyDto": {
+  "properties": {
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "name": {
+    "type": "string"
+   }
+  },
+  "type": "object"
+ },
+ "IdOnlyDto": {
+  "properties": {
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   }
+  },
+  "required": [
+   "id"
+  ],
+  "type": "object"
+ },
+ "IntegrationTypeDto": {
+  "enum": [
+   "allure_testops",
+   "azure",
+   "bamboo",
+   "bitbucket",
+   "circleci",
+   "github",
+   "gitlab",
+   "jenkins",
+   "jira",
+   "jira_cloud",
+   "redmine",
+   "target_process",
+   "teamcity",
+   "tekton",
+   "testrail",
+   "xray",
+   "xray_cloud",
+   "youtrack",
+   "zephyr_scale",
+   "zephyr_scale_cloud",
+   "yandex_tracker",
+   "custom",
+   "aws",
+   "wrike",
+   "kaiten",
+   "bitrix24",
+   "clickup",
+   "eva_project",
+   "confluence",
+   "confluence_cloud",
+   "whisper_asr",
+   "testops",
+   "open_ai",
+   "mcp",
+   "yandex_wiki"
+  ],
+  "type": "string"
+ },
+ "IssueDto": {
+  "properties": {
+   "closed": {
+    "type": "boolean"
+   },
+   "displayName": {
+    "type": "string"
+   },
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "integrationId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "integrationType": {
+    "$ref": "#/components/schemas/IntegrationTypeDto"
+   },
+   "name": {
+    "type": "string"
+   },
+   "status": {
+    "type": "string"
+   },
+   "summary": {
+    "type": "string"
+   },
+   "url": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "id",
+   "name"
+  ],
+  "type": "object"
+ },
+ "ItalicMark": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/TextMark"
+   }
+  ]
+ },
+ "JobInfoDto": {
+  "properties": {
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "name": {
+    "type": "string"
+   },
+   "type": {
+    "$ref": "#/components/schemas/IntegrationTypeDto"
+   },
+   "url": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "id",
+   "name"
+  ],
+  "type": "object"
+ },
+ "JobMapping": {
+  "properties": {
+   "fromId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "toId": {
+    "format": "int64",
+    "type": "integer"
+   }
+  },
+  "required": [
+   "toId"
+  ],
+  "type": "object"
+ },
+ "JobRunDto": {
+  "properties": {
+   "createdBy": {
+    "type": "string"
+   },
+   "createdDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "errorMessage": {
+    "type": "string"
+   },
+   "externalId": {
+    "type": "string"
+   },
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "job": {
+    "$ref": "#/components/schemas/JobInfoDto"
+   },
+   "lastModifiedBy": {
+    "type": "string"
+   },
+   "lastModifiedDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "launchId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "name": {
+    "type": "string"
+   },
+   "stage": {
+    "$ref": "#/components/schemas/JobRunStageDto"
+   },
+   "status": {
+    "$ref": "#/components/schemas/JobRunStatusDto"
+   },
+   "url": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "id",
+   "job",
+   "launchId",
+   "stage"
+  ],
+  "type": "object"
+ },
+ "JobRunStageDto": {
+  "enum": [
+   "run_failure",
+   "scheduled",
+   "in_progress",
+   "finished"
+  ],
+  "type": "string"
+ },
+ "JobRunStatusDto": {
+  "enum": [
+   "failed",
+   "passed",
+   "cancelled",
+   "unknown"
+  ],
+  "type": "string"
+ },
+ "LaunchCreateDto": {
+  "properties": {
+   "autoclose": {
+    "type": "boolean"
+   },
+   "external": {
+    "type": "boolean"
+   },
+   "issues": {
+    "items": {
+     "$ref": "#/components/schemas/IssueDto"
+    },
+    "type": "array"
+   },
+   "links": {
+    "items": {
+     "$ref": "#/components/schemas/ExternalLinkDto"
+    },
+    "type": "array"
+   },
+   "name": {
+    "type": "string"
+   },
+   "projectId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "releaseId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "tags": {
+    "items": {
+     "$ref": "#/components/schemas/LaunchTagDto"
+    },
+    "type": "array"
+   }
+  },
+  "required": [
+   "name",
+   "projectId"
+  ],
+  "type": "object"
+ },
+ "LaunchDto": {
+  "properties": {
+   "autoclose": {
+    "type": "boolean"
+   },
+   "closed": {
+    "type": "boolean"
+   },
+   "createdBy": {
+    "type": "string"
+   },
+   "createdDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "external": {
+    "type": "boolean"
+   },
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "issues": {
+    "items": {
+     "$ref": "#/components/schemas/IssueDto"
+    },
+    "type": "array"
+   },
+   "lastModifiedBy": {
+    "type": "string"
+   },
+   "lastModifiedDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "links": {
+    "items": {
+     "$ref": "#/components/schemas/ExternalLinkDto"
+    },
+    "type": "array"
+   },
+   "name": {
+    "type": "string"
+   },
+   "projectId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "releaseId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "tags": {
+    "items": {
+     "$ref": "#/components/schemas/LaunchTagDto"
+    },
+    "type": "array"
+   }
+  },
+  "required": [
+   "closed",
+   "id",
+   "name",
+   "projectId"
+  ],
+  "type": "object"
+ },
+ "LaunchPatchDto": {
+  "properties": {
+   "autoclose": {
+    "type": "boolean"
+   },
+   "external": {
+    "type": "boolean"
+   },
+   "issues": {
+    "items": {
+     "$ref": "#/components/schemas/IssueDto"
+    },
+    "type": "array"
+   },
+   "links": {
+    "items": {
+     "$ref": "#/components/schemas/ExternalLinkDto"
+    },
+    "type": "array"
+   },
+   "name": {
+    "type": "string"
+   },
+   "releaseId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "tags": {
+    "items": {
+     "$ref": "#/components/schemas/LaunchTagDto"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "LaunchPreviewDto": {
+  "properties": {
+   "closed": {
+    "type": "boolean"
+   },
+   "createdBy": {
+    "type": "string"
+   },
+   "createdDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "environment": {
+    "items": {
+     "$ref": "#/components/schemas/EnvVarValueDto"
+    },
+    "type": "array"
+   },
+   "external": {
+    "type": "boolean"
+   },
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "issues": {
+    "items": {
+     "$ref": "#/components/schemas/IssueDto"
+    },
+    "type": "array"
+   },
+   "jobs": {
+    "items": {
+     "$ref": "#/components/schemas/JobRunDto"
+    },
+    "type": "array"
+   },
+   "knownDefectsCount": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "lastModifiedBy": {
+    "type": "string"
+   },
+   "lastModifiedDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "links": {
+    "items": {
+     "$ref": "#/components/schemas/ExternalLinkDto"
+    },
+    "type": "array"
+   },
+   "name": {
+    "type": "string"
+   },
+   "newDefectsCount": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "projectId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "release": {
+    "$ref": "#/components/schemas/ReleaseDto"
+   },
+   "statistic": {
+    "items": {
+     "$ref": "#/components/schemas/TestStatusCount"
+    },
+    "type": "array"
+   },
+   "tags": {
+    "items": {
+     "$ref": "#/components/schemas/LaunchTagDto"
+    },
+    "type": "array"
+   }
+  },
+  "required": [
+   "closed",
+   "id",
+   "knownDefectsCount",
+   "name",
+   "newDefectsCount",
+   "projectId"
+  ],
+  "type": "object"
+ },
+ "LaunchTagDto": {
+  "properties": {
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "name": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "id",
+   "name"
+  ],
+  "type": "object"
+ },
+ "LineBreakParagraphNode": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/ParagraphNode"
+   }
+  ]
+ },
+ "LinkMark": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/TextMark"
+   }
+  ],
+  "properties": {
+   "attrs": {
+    "$ref": "#/components/schemas/Attrs"
+   }
+  }
+ },
+ "MemberDto": {
+  "properties": {
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "name": {
+    "type": "string"
+   },
+   "role": {
+    "$ref": "#/components/schemas/RoleDto"
+   }
+  },
+  "required": [
+   "id",
+   "name",
+   "role"
+  ],
+  "type": "object"
+ },
+ "NormalizedScenarioDto": {
+  "properties": {
+   "attachments": {
+    "additionalProperties": {
+     "oneOf": [
+      {
+       "$ref": "#/components/schemas/TestCaseAttachmentRowDto"
+      },
+      {
+       "$ref": "#/components/schemas/TestFixtureResultAttachmentRowDto"
+      },
+      {
+       "$ref": "#/components/schemas/TestResultAttachmentRowDto"
+      }
+     ]
+    },
+    "type": "object"
+   },
+   "root": {
+    "$ref": "#/components/schemas/NormalizedScenarioStepDto"
+   },
+   "scenarioSteps": {
+    "additionalProperties": {
+     "$ref": "#/components/schemas/NormalizedScenarioStepDto"
+    },
+    "type": "object"
+   },
+   "sharedStepAttachments": {
+    "additionalProperties": {
+     "oneOf": [
+      {
+       "$ref": "#/components/schemas/TestCaseAttachmentRowDto"
+      },
+      {
+       "$ref": "#/components/schemas/TestFixtureResultAttachmentRowDto"
+      },
+      {
+       "$ref": "#/components/schemas/TestResultAttachmentRowDto"
+      }
+     ]
+    },
+    "type": "object"
+   },
+   "sharedStepScenarioSteps": {
+    "additionalProperties": {
+     "$ref": "#/components/schemas/NormalizedScenarioStepDto"
+    },
+    "type": "object"
+   },
+   "sharedSteps": {
+    "additionalProperties": {
+     "$ref": "#/components/schemas/NormalizedScenarioStepDto"
+    },
+    "type": "object"
+   }
+  },
+  "type": "object"
+ },
+ "NormalizedScenarioStepDto": {
+  "properties": {
+   "archived": {
+    "type": "boolean"
+   },
+   "attachmentId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "body": {
+    "type": "string"
+   },
+   "bodyJson": {
+    "oneOf": [
+     {
+      "$ref": "#/components/schemas/DefaultTextMarkupDocument"
+     }
+    ]
+   },
+   "children": {
+    "items": {
+     "format": "int64",
+     "type": "integer"
+    },
+    "type": "array"
+   },
+   "createdBy": {
+    "type": "string"
+   },
+   "createdDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "expectedResult": {
+    "type": "string"
+   },
+   "expectedResultId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "lastModifiedBy": {
+    "type": "string"
+   },
+   "lastModifiedDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "sharedStepId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "testCaseId": {
+    "format": "int64",
+    "type": "integer"
+   }
+  },
+  "type": "object"
+ },
+ "PageLaunchDto": {
+  "properties": {
+   "content": {
+    "items": {
+     "$ref": "#/components/schemas/LaunchDto"
+    },
+    "type": "array"
+   },
+   "empty": {
+    "type": "boolean"
+   },
+   "first": {
+    "type": "boolean"
+   },
+   "last": {
+    "type": "boolean"
+   },
+   "number": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "numberOfElements": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "pageable": {
+    "$ref": "#/components/schemas/Pageable"
+   },
+   "size": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "sort": {
+    "properties": {
+     "empty": {
+      "example": false,
+      "type": "boolean"
+     },
+     "sorted": {
+      "example": true,
+      "type": "boolean"
+     },
+     "unsorted": {
+      "example": false,
+      "type": "boolean"
+     }
+    },
+    "type": "object"
+   },
+   "totalElements": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "totalPages": {
+    "format": "int32",
+    "type": "integer"
+   }
+  },
+  "type": "object"
+ },
+ "PageLaunchPreviewDto": {
+  "properties": {
+   "content": {
+    "items": {
+     "$ref": "#/components/schemas/LaunchPreviewDto"
+    },
+    "type": "array"
+   },
+   "empty": {
+    "type": "boolean"
+   },
+   "first": {
+    "type": "boolean"
+   },
+   "last": {
+    "type": "boolean"
+   },
+   "number": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "numberOfElements": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "pageable": {
+    "$ref": "#/components/schemas/Pageable"
+   },
+   "size": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "sort": {
+    "properties": {
+     "empty": {
+      "example": false,
+      "type": "boolean"
+     },
+     "sorted": {
+      "example": true,
+      "type": "boolean"
+     },
+     "unsorted": {
+      "example": false,
+      "type": "boolean"
+     }
+    },
+    "type": "object"
+   },
+   "totalElements": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "totalPages": {
+    "format": "int32",
+    "type": "integer"
+   }
+  },
+  "type": "object"
+ },
+ "PageProjectDto": {
+  "properties": {
+   "content": {
+    "items": {
+     "$ref": "#/components/schemas/ProjectDto"
+    },
+    "type": "array"
+   },
+   "empty": {
+    "type": "boolean"
+   },
+   "first": {
+    "type": "boolean"
+   },
+   "last": {
+    "type": "boolean"
+   },
+   "number": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "numberOfElements": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "pageable": {
+    "$ref": "#/components/schemas/Pageable"
+   },
+   "size": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "sort": {
+    "properties": {
+     "empty": {
+      "example": false,
+      "type": "boolean"
+     },
+     "sorted": {
+      "example": true,
+      "type": "boolean"
+     },
+     "unsorted": {
+      "example": false,
+      "type": "boolean"
+     }
+    },
+    "type": "object"
+   },
+   "totalElements": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "totalPages": {
+    "format": "int32",
+    "type": "integer"
+   }
+  },
+  "type": "object"
+ },
+ "PageTestCaseDto": {
+  "properties": {
+   "content": {
+    "items": {
+     "$ref": "#/components/schemas/TestCaseDto"
+    },
+    "type": "array"
+   },
+   "empty": {
+    "type": "boolean"
+   },
+   "first": {
+    "type": "boolean"
+   },
+   "last": {
+    "type": "boolean"
+   },
+   "number": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "numberOfElements": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "pageable": {
+    "$ref": "#/components/schemas/Pageable"
+   },
+   "size": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "sort": {
+    "properties": {
+     "empty": {
+      "example": false,
+      "type": "boolean"
+     },
+     "sorted": {
+      "example": true,
+      "type": "boolean"
+     },
+     "unsorted": {
+      "example": false,
+      "type": "boolean"
+     }
+    },
+    "type": "object"
+   },
+   "totalElements": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "totalPages": {
+    "format": "int32",
+    "type": "integer"
+   }
+  },
+  "type": "object"
+ },
+ "PageTestCaseRowDto": {
+  "properties": {
+   "content": {
+    "items": {
+     "$ref": "#/components/schemas/TestCaseRowDto"
+    },
+    "type": "array"
+   },
+   "empty": {
+    "type": "boolean"
+   },
+   "first": {
+    "type": "boolean"
+   },
+   "last": {
+    "type": "boolean"
+   },
+   "number": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "numberOfElements": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "pageable": {
+    "$ref": "#/components/schemas/Pageable"
+   },
+   "size": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "sort": {
+    "properties": {
+     "empty": {
+      "example": false,
+      "type": "boolean"
+     },
+     "sorted": {
+      "example": true,
+      "type": "boolean"
+     },
+     "unsorted": {
+      "example": false,
+      "type": "boolean"
+     }
+    },
+    "type": "object"
+   },
+   "totalElements": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "totalPages": {
+    "format": "int32",
+    "type": "integer"
+   }
+  },
+  "type": "object"
+ },
+ "PageTestPlanDto": {
+  "properties": {
+   "content": {
+    "items": {
+     "$ref": "#/components/schemas/TestPlanDto"
+    },
+    "type": "array"
+   },
+   "empty": {
+    "type": "boolean"
+   },
+   "first": {
+    "type": "boolean"
+   },
+   "last": {
+    "type": "boolean"
+   },
+   "number": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "numberOfElements": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "pageable": {
+    "$ref": "#/components/schemas/Pageable"
+   },
+   "size": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "sort": {
+    "properties": {
+     "empty": {
+      "example": false,
+      "type": "boolean"
+     },
+     "sorted": {
+      "example": true,
+      "type": "boolean"
+     },
+     "unsorted": {
+      "example": false,
+      "type": "boolean"
+     }
+    },
+    "type": "object"
+   },
+   "totalElements": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "totalPages": {
+    "format": "int32",
+    "type": "integer"
+   }
+  },
+  "type": "object"
+ },
+ "PageTestResultDto": {
+  "properties": {
+   "content": {
+    "items": {
+     "$ref": "#/components/schemas/TestResultDto"
+    },
+    "type": "array"
+   },
+   "empty": {
+    "type": "boolean"
+   },
+   "first": {
+    "type": "boolean"
+   },
+   "last": {
+    "type": "boolean"
+   },
+   "number": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "numberOfElements": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "pageable": {
+    "$ref": "#/components/schemas/Pageable"
+   },
+   "size": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "sort": {
+    "properties": {
+     "empty": {
+      "example": false,
+      "type": "boolean"
+     },
+     "sorted": {
+      "example": true,
+      "type": "boolean"
+     },
+     "unsorted": {
+      "example": false,
+      "type": "boolean"
+     }
+    },
+    "type": "object"
+   },
+   "totalElements": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "totalPages": {
+    "format": "int32",
+    "type": "integer"
+   }
+  },
+  "type": "object"
+ },
+ "Pageable": {
+  "properties": {
+   "offset": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "pageNumber": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "pageSize": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "paged": {
+    "type": "boolean"
+   },
+   "sort": {
+    "properties": {
+     "empty": {
+      "example": false,
+      "type": "boolean"
+     },
+     "sorted": {
+      "example": true,
+      "type": "boolean"
+     },
+     "unsorted": {
+      "example": false,
+      "type": "boolean"
+     }
+    },
+    "type": "object"
+   },
+   "unpaged": {
+    "type": "boolean"
+   }
+  },
+  "type": "object"
+ },
+ "ParagraphDocumentNode": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/DocumentNode"
+   }
+  ],
+  "properties": {
+   "attrs": {
+    "$ref": "#/components/schemas/Attrs"
+   },
+   "content": {
+    "items": {
+     "oneOf": [
+      {
+       "$ref": "#/components/schemas/LineBreakParagraphNode"
+      },
+      {
+       "$ref": "#/components/schemas/ParameterParagraphNode"
+      },
+      {
+       "$ref": "#/components/schemas/TextParagraphNode"
+      }
+     ]
+    },
+    "type": "array"
+   }
+  }
+ },
+ "ParagraphNode": {
+  "discriminator": {
+   "propertyName": "type"
+  },
+  "properties": {
+   "type": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "type"
+  ]
+ },
+ "ParameterParagraphNode": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/ParagraphNode"
+   }
+  ],
+  "properties": {
+   "attrs": {
+    "$ref": "#/components/schemas/Attrs"
+   }
+  }
+ },
+ "ProjectDto": {
+  "properties": {
+   "abbr": {
+    "type": "string"
+   },
+   "automationPercent": {
+    "format": "double",
+    "type": "number"
+   },
+   "createdBy": {
+    "type": "string"
+   },
+   "createdDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "description": {
+    "type": "string"
+   },
+   "descriptionHtml": {
+    "type": "string"
+   },
+   "favorite": {
+    "type": "boolean"
+   },
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "isPublic": {
+    "type": "boolean"
+   },
+   "isVersioned": {
+    "type": "boolean"
+   },
+   "lastModifiedBy": {
+    "type": "string"
+   },
+   "lastModifiedDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "launchCount": {
+    "format": "int32",
+    "type": "integer"
+   },
+   "name": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "id",
+   "isPublic",
+   "isVersioned",
+   "name"
+  ],
+  "type": "object"
+ },
+ "ReleaseDto": {
+  "properties": {
+   "closed": {
+    "type": "boolean"
+   },
+   "createdBy": {
+    "type": "string"
+   },
+   "createdDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "deleted": {
+    "type": "boolean"
+   },
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "lastModifiedBy": {
+    "type": "string"
+   },
+   "lastModifiedDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "name": {
+    "type": "string"
+   },
+   "projectId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "statistic": {
+    "$ref": "#/components/schemas/ReleaseStatisticDto"
+   }
+  },
+  "required": [
+   "closed",
+   "deleted",
+   "id",
+   "name",
+   "projectId"
+  ],
+  "type": "object"
+ },
+ "ReleaseStatisticDto": {
+  "properties": {
+   "automated_count": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "launch_count": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "manual_count": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "participants": {
+    "items": {
+     "type": "string"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "RoleDto": {
+  "properties": {
+   "createdBy": {
+    "type": "string"
+   },
+   "createdDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "lastModifiedBy": {
+    "type": "string"
+   },
+   "lastModifiedDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "name": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "id",
+   "name"
+  ],
+  "type": "object"
+ },
+ "ScenarioStepCreateDto": {
+  "properties": {
+   "attachmentId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "body": {
+    "type": "string"
+   },
+   "bodyJson": {
+    "oneOf": [
+     {
+      "$ref": "#/components/schemas/DefaultTextMarkupDocument"
+     }
+    ]
+   },
+   "parentId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "sharedStepId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "testCaseId": {
+    "format": "int64",
+    "type": "integer"
+   }
+  },
+  "type": "object"
+ },
+ "ScenarioStepDto": {
+  "discriminator": {
+   "propertyName": "type"
+  },
+  "properties": {
+   "type": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "type"
+  ]
+ },
+ "SharedStepStepDto": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/ScenarioStepDto"
+   }
+  ],
+  "properties": {
+   "sharedStepId": {
+    "format": "int64",
+    "type": "integer"
+   }
+  }
+ },
+ "StatusDto": {
+  "properties": {
+   "color": {
+    "type": "string"
+   },
+   "createdBy": {
+    "type": "string"
+   },
+   "createdDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "lastModifiedBy": {
+    "type": "string"
+   },
+   "lastModifiedDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "name": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "color",
+   "id",
+   "name"
+  ],
+  "type": "object"
+ },
+ "StrikeMark": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/TextMark"
+   }
+  ]
+ },
+ "TestCaseAttachmentRowDto": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/AttachmentRow"
+   }
+  ],
+  "properties": {
+   "missed": {
+    "type": "boolean"
+   }
+  }
+ },
+ "TestCaseBulkRunNewLaunchDto": {
+  "properties": {
+   "assignees": {
+    "items": {
+     "type": "string"
+    },
+    "type": "array"
+   },
+   "assignmentStrategy": {
+    "$ref": "#/components/schemas/AssignmentTypeDto"
+   },
+   "envVarValueSets": {
+    "items": {
+     "$ref": "#/components/schemas/EnvironmentSetDto"
+    },
+    "type": "array"
+   },
+   "issues": {
+    "items": {
+     "$ref": "#/components/schemas/IssueDto"
+    },
+    "type": "array",
+    "uniqueItems": true
+   },
+   "jobsMapping": {
+    "items": {
+     "$ref": "#/components/schemas/JobMapping"
+    },
+    "type": "array"
+   },
+   "jobsParams": {
+    "items": {
+     "$ref": "#/components/schemas/TestCaseRunJobParameterDto"
+    },
+    "type": "array"
+   },
+   "launchName": {
+    "maxLength": 255,
+    "minLength": 1,
+    "type": "string"
+   },
+   "links": {
+    "items": {
+     "$ref": "#/components/schemas/ExternalLinkDto"
+    },
+    "type": "array",
+    "uniqueItems": true
+   },
+   "releaseId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "selection": {
+    "$ref": "#/components/schemas/TestCaseTreeSelectionDto"
+   },
+   "tags": {
+    "items": {
+     "$ref": "#/components/schemas/LaunchTagDto"
+    },
+    "type": "array",
+    "uniqueItems": true
+   }
+  },
+  "required": [
+   "launchName",
+   "selection"
+  ],
+  "type": "object"
+ },
+ "TestCaseCreateV2Dto": {
+  "properties": {
+   "automated": {
+    "type": "boolean"
+   },
+   "customFields": {
+    "items": {
+     "$ref": "#/components/schemas/CustomFieldValueWithCfDto"
+    },
+    "type": "array"
+   },
+   "deleted": {
+    "type": "boolean"
+   },
+   "description": {
+    "type": "string"
+   },
+   "expectedResult": {
+    "type": "string"
+   },
+   "external": {
+    "type": "boolean"
+   },
+   "fullName": {
+    "type": "string"
+   },
+   "links": {
+    "items": {
+     "$ref": "#/components/schemas/ExternalLinkDto"
+    },
+    "type": "array"
+   },
+   "members": {
+    "items": {
+     "$ref": "#/components/schemas/MemberDto"
+    },
+    "type": "array"
+   },
+   "name": {
+    "type": "string"
+   },
+   "postcondition": {
+    "type": "string"
+   },
+   "precondition": {
+    "type": "string"
+   },
+   "projectId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "scenario": {
+    "$ref": "#/components/schemas/TestCaseScenarioV2Dto"
+   },
+   "statusId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "tags": {
+    "items": {
+     "$ref": "#/components/schemas/TestTagDto"
+    },
+    "type": "array"
+   },
+   "testLayerId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "workflowId": {
+    "format": "int64",
+    "type": "integer"
+   }
+  },
+  "required": [
+   "name",
+   "projectId"
+  ],
+  "type": "object"
+ },
+ "TestCaseDto": {
+  "properties": {
+   "automated": {
+    "type": "boolean"
+   },
+   "createdBy": {
+    "type": "string"
+   },
+   "createdDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "deleted": {
+    "type": "boolean"
+   },
+   "description": {
+    "type": "string"
+   },
+   "descriptionHtml": {
+    "type": "string"
+   },
+   "duration": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "editable": {
+    "type": "boolean"
+   },
+   "expectedResult": {
+    "type": "string"
+   },
+   "expectedResultHtml": {
+    "type": "string"
+   },
+   "external": {
+    "type": "boolean"
+   },
+   "flaky": {
+    "type": "boolean"
+   },
+   "fullName": {
+    "type": "string"
+   },
+   "hash": {
+    "type": "string"
+   },
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "lastModifiedBy": {
+    "type": "string"
+   },
+   "lastModifiedDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "links": {
+    "items": {
+     "$ref": "#/components/schemas/ExternalLinkDto"
+    },
+    "type": "array",
+    "uniqueItems": true
+   },
+   "name": {
+    "type": "string"
+   },
+   "postcondition": {
+    "type": "string"
+   },
+   "postconditionHtml": {
+    "type": "string"
+   },
+   "precondition": {
+    "type": "string"
+   },
+   "preconditionHtml": {
+    "type": "string"
+   },
+   "projectId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "status": {
+    "$ref": "#/components/schemas/StatusDto"
+   },
+   "tags": {
+    "items": {
+     "$ref": "#/components/schemas/TestTagDto"
+    },
+    "type": "array"
+   },
+   "testLayer": {
+    "$ref": "#/components/schemas/TestLayerDto"
+   },
+   "workflow": {
+    "$ref": "#/components/schemas/WorkflowRowDto"
+   }
+  },
+  "type": "object"
+ },
+ "TestCasePatchV2Dto": {
+  "properties": {
+   "automated": {
+    "type": "boolean"
+   },
+   "customFields": {
+    "items": {
+     "$ref": "#/components/schemas/CustomFieldValueWithCfDto"
+    },
+    "type": "array"
+   },
+   "deleted": {
+    "type": "boolean"
+   },
+   "description": {
+    "type": "string"
+   },
+   "duration": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "expectedResult": {
+    "type": "string"
+   },
+   "external": {
+    "type": "boolean"
+   },
+   "flaky": {
+    "type": "boolean"
+   },
+   "fullName": {
+    "type": "string"
+   },
+   "links": {
+    "items": {
+     "$ref": "#/components/schemas/ExternalLinkDto"
+    },
+    "type": "array"
+   },
+   "members": {
+    "items": {
+     "$ref": "#/components/schemas/MemberDto"
+    },
+    "type": "array"
+   },
+   "name": {
+    "type": "string"
+   },
+   "postcondition": {
+    "type": "string"
+   },
+   "precondition": {
+    "type": "string"
+   },
+   "scenario": {
+    "$ref": "#/components/schemas/TestCaseScenarioV2Dto"
+   },
+   "statusId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "tags": {
+    "items": {
+     "$ref": "#/components/schemas/TestTagDto"
+    },
+    "type": "array"
+   },
+   "testLayerId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "workflowId": {
+    "format": "int64",
+    "type": "integer"
+   }
+  },
+  "type": "object"
+ },
+ "TestCaseRowDto": {
+  "properties": {
+   "automated": {
+    "type": "boolean"
+   },
+   "flaky": {
+    "type": "boolean"
+   },
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "name": {
+    "type": "string"
+   },
+   "status": {
+    "$ref": "#/components/schemas/StatusDto"
+   },
+   "testLayer": {
+    "$ref": "#/components/schemas/TestLayerDto"
+   }
+  },
+  "required": [
+   "id",
+   "name"
+  ],
+  "type": "object"
+ },
+ "TestCaseRunJobParameterDto": {
+  "properties": {
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "value": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "id"
+  ],
+  "type": "object"
+ },
+ "TestCaseScenarioStepDto": {
+  "properties": {
+   "attachments": {
+    "items": {
+     "$ref": "#/components/schemas/TestCaseAttachmentRowDto"
+    },
+    "type": "array"
+   },
+   "expectedResult": {
+    "type": "string"
+   },
+   "hasContent": {
+    "readOnly": true,
+    "type": "boolean"
+   },
+   "keyword": {
+    "type": "string"
+   },
+   "leaf": {
+    "readOnly": true,
+    "type": "boolean"
+   },
+   "name": {
+    "type": "string"
+   },
+   "steps": {
+    "items": {
+     "$ref": "#/components/schemas/TestCaseScenarioStepDto"
+    },
+    "type": "array"
+   },
+   "stepsCount": {
+    "format": "int64",
+    "readOnly": true,
+    "type": "integer"
+   }
+  },
+  "type": "object"
+ },
+ "TestCaseScenarioV2Dto": {
+  "properties": {
+   "steps": {
+    "items": {
+     "oneOf": [
+      {
+       "$ref": "#/components/schemas/AttachmentStepDto"
+      },
+      {
+       "$ref": "#/components/schemas/BodyStepDto"
+      },
+      {
+       "$ref": "#/components/schemas/ExpectedBodyStepDto"
+      },
+      {
+       "$ref": "#/components/schemas/SharedStepStepDto"
+      }
+     ]
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "TestCaseTreeSelectionDto": {
+  "properties": {
+   "deleted": {
+    "type": "boolean"
+   },
+   "filterId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "groupsExclude": {
+    "items": {
+     "items": {
+      "format": "int64",
+      "type": "integer"
+     },
+     "type": "array"
+    },
+    "type": "array",
+    "uniqueItems": true
+   },
+   "groupsInclude": {
+    "items": {
+     "items": {
+      "format": "int64",
+      "type": "integer"
+     },
+     "type": "array"
+    },
+    "type": "array",
+    "uniqueItems": true
+   },
+   "inverted": {
+    "type": "boolean"
+   },
+   "jobId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "leafsExclude": {
+    "items": {
+     "format": "int64",
+     "type": "integer"
+    },
+    "type": "array",
+    "uniqueItems": true
+   },
+   "leafsInclude": {
+    "items": {
+     "format": "int64",
+     "type": "integer"
+    },
+    "type": "array",
+    "uniqueItems": true
+   },
+   "path": {
+    "items": {
+     "format": "int64",
+     "type": "integer"
+    },
+    "type": "array"
+   },
+   "projectId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "search": {
+    "type": "string"
+   },
+   "treeId": {
+    "format": "int64",
+    "type": "integer"
+   }
+  },
+  "required": [
+   "projectId"
+  ],
+  "type": "object"
+ },
+ "TestFixtureResultAttachmentRowDto": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/AttachmentRow"
+   }
+  ],
+  "properties": {
+   "missed": {
+    "type": "boolean"
+   }
+  }
+ },
+ "TestLayerDto": {
+  "properties": {
+   "createdBy": {
+    "type": "string"
+   },
+   "createdDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "lastModifiedBy": {
+    "type": "string"
+   },
+   "lastModifiedDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "name": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "id",
+   "name"
+  ],
+  "type": "object"
+ },
+ "TestPlanCreateDto": {
+  "properties": {
+   "baseRql": {
+    "type": "string"
+   },
+   "name": {
+    "maxLength": 255,
+    "minLength": 1,
+    "type": "string"
+   },
+   "projectId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "treeId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "treeSelection": {
+    "$ref": "#/components/schemas/TreeSelectionDto"
+   }
+  },
+  "required": [
+   "name",
+   "projectId"
+  ],
+  "type": "object"
+ },
+ "TestPlanDto": {
+  "properties": {
+   "baseRql": {
+    "type": "string"
+   },
+   "createdBy": {
+    "type": "string"
+   },
+   "createdDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "lastModifiedBy": {
+    "type": "string"
+   },
+   "lastModifiedDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "name": {
+    "type": "string"
+   },
+   "projectId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "testCasesCount": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "tree": {
+    "$ref": "#/components/schemas/IdAndNameOnlyDto"
+   },
+   "treeSelection": {
+    "$ref": "#/components/schemas/TreeSelectionDto"
+   }
+  },
+  "required": [
+   "baseRql",
+   "id",
+   "name",
+   "projectId",
+   "testCasesCount"
+  ],
+  "type": "object"
+ },
+ "TestPlanPatchDto": {
+  "properties": {
+   "baseRql": {
+    "type": "string"
+   },
+   "name": {
+    "type": "string"
+   },
+   "treeId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "treeSelection": {
+    "$ref": "#/components/schemas/TreeSelectionDto"
+   }
+  },
+  "type": "object"
+ },
+ "TestResultAttachmentRowDto": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/AttachmentRow"
+   }
+  ],
+  "properties": {
+   "fromTestCase": {
+    "type": "boolean"
+   },
+   "missed": {
+    "type": "boolean"
+   }
+  }
+ },
+ "TestResultAttachmentStepDto": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/TrScenarioStepDto"
+   }
+  ],
+  "properties": {
+   "attachment": {
+    "oneOf": [
+     {
+      "$ref": "#/components/schemas/TestCaseAttachmentRowDto"
+     },
+     {
+      "$ref": "#/components/schemas/TestFixtureResultAttachmentRowDto"
+     },
+     {
+      "$ref": "#/components/schemas/TestResultAttachmentRowDto"
+     }
+    ]
+   },
+   "attachmentId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "duration": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "start": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "status": {
+    "$ref": "#/components/schemas/TestStatus"
+   },
+   "stop": {
+    "format": "int64",
+    "type": "integer"
+   }
+  }
+ },
+ "TestResultBodyStepDto": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/TrScenarioStepDto"
+   }
+  ],
+  "properties": {
+   "body": {
+    "type": "string"
+   },
+   "bodyJson": {
+    "oneOf": [
+     {
+      "$ref": "#/components/schemas/DefaultTextMarkupDocument"
+     }
+    ]
+   },
+   "duration": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "expectedResultSteps": {
+    "items": {
+     "oneOf": [
+      {
+       "$ref": "#/components/schemas/TestResultAttachmentStepDto"
+      },
+      {
+       "$ref": "#/components/schemas/TestResultBodyStepDto"
+      },
+      {
+       "$ref": "#/components/schemas/TestResultExpectedBodyStepDto"
+      }
+     ]
+    },
+    "type": "array"
+   },
+   "message": {
+    "type": "string"
+   },
+   "parameters": {
+    "items": {
+     "$ref": "#/components/schemas/TestResultScenarioStepParameter"
+    },
+    "type": "array",
+    "uniqueItems": true
+   },
+   "showMessage": {
+    "type": "boolean"
+   },
+   "start": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "status": {
+    "$ref": "#/components/schemas/TestStatus"
+   },
+   "steps": {
+    "items": {},
+    "type": "array"
+   },
+   "stop": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "trace": {
+    "type": "string"
+   }
+  }
+ },
+ "TestResultCreateV2Dto": {
+  "properties": {
+   "customFields": {
+    "items": {
+     "$ref": "#/components/schemas/CustomFieldValueWithCfDto"
+    },
+    "type": "array"
+   },
+   "description": {
+    "type": "string"
+   },
+   "duration": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "expectedResult": {
+    "type": "string"
+   },
+   "external": {
+    "type": "boolean"
+   },
+   "fullName": {
+    "type": "string"
+   },
+   "launchId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "links": {
+    "items": {
+     "$ref": "#/components/schemas/ExternalLinkDto"
+    },
+    "type": "array"
+   },
+   "manual": {
+    "type": "boolean"
+   },
+   "members": {
+    "items": {
+     "$ref": "#/components/schemas/MemberDto"
+    },
+    "type": "array"
+   },
+   "message": {
+    "type": "string"
+   },
+   "name": {
+    "type": "string"
+   },
+   "postcondition": {
+    "type": "string"
+   },
+   "precondition": {
+    "type": "string"
+   },
+   "scenario": {
+    "$ref": "#/components/schemas/TestResultScenarioV2Dto"
+   },
+   "start": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "status": {
+    "$ref": "#/components/schemas/TestStatus"
+   },
+   "stop": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "tags": {
+    "items": {
+     "$ref": "#/components/schemas/TestTagDto"
+    },
+    "type": "array"
+   },
+   "testCaseId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "testLayerId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "trace": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "launchId",
+   "name",
+   "status"
+  ],
+  "type": "object"
+ },
+ "TestResultDto": {
+  "properties": {
+   "assignee": {
+    "type": "string"
+   },
+   "category": {
+    "$ref": "#/components/schemas/CategoryDto"
+   },
+   "createdBy": {
+    "type": "string"
+   },
+   "createdDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "description": {
+    "type": "string"
+   },
+   "descriptionHtml": {
+    "type": "string"
+   },
+   "duration": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "expectedResult": {
+    "type": "string"
+   },
+   "expectedResultHtml": {
+    "type": "string"
+   },
+   "external": {
+    "type": "boolean"
+   },
+   "flaky": {
+    "type": "boolean"
+   },
+   "flakyCandidate": {
+    "type": "boolean"
+   },
+   "fullName": {
+    "type": "string"
+   },
+   "hidden": {
+    "type": "boolean"
+   },
+   "historyKey": {
+    "type": "string"
+   },
+   "hostId": {
+    "type": "string"
+   },
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "jobRun": {
+    "$ref": "#/components/schemas/JobRunDto"
+   },
+   "known": {
+    "type": "boolean"
+   },
+   "lastModifiedBy": {
+    "type": "string"
+   },
+   "lastModifiedDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "launchId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "layer": {
+    "$ref": "#/components/schemas/TestLayerDto"
+   },
+   "links": {
+    "items": {
+     "$ref": "#/components/schemas/ExternalLinkDto"
+    },
+    "type": "array",
+    "uniqueItems": true
+   },
+   "manual": {
+    "type": "boolean"
+   },
+   "message": {
+    "type": "string"
+   },
+   "muted": {
+    "type": "boolean"
+   },
+   "name": {
+    "type": "string"
+   },
+   "parameters": {
+    "items": {
+     "$ref": "#/components/schemas/TestResultParameterDto"
+    },
+    "type": "array"
+   },
+   "postcondition": {
+    "type": "string"
+   },
+   "postconditionHtml": {
+    "type": "string"
+   },
+   "precondition": {
+    "type": "string"
+   },
+   "preconditionHtml": {
+    "type": "string"
+   },
+   "projectId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "retriedBy": {
+    "$ref": "#/components/schemas/IdAndNameOnlyDto"
+   },
+   "scenarioKey": {
+    "type": "string"
+   },
+   "start": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "status": {
+    "$ref": "#/components/schemas/TestStatus"
+   },
+   "stop": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "tags": {
+    "items": {
+     "$ref": "#/components/schemas/TestTagDto"
+    },
+    "type": "array",
+    "uniqueItems": true
+   },
+   "testCaseId": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "testedBy": {
+    "type": "string"
+   },
+   "threadId": {
+    "type": "string"
+   },
+   "trace": {
+    "type": "string"
+   }
+  },
+  "type": "object"
+ },
+ "TestResultExpectedBodyStepDto": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/TrScenarioStepDto"
+   }
+  ],
+  "properties": {
+   "body": {
+    "type": "string"
+   },
+   "bodyJson": {
+    "oneOf": [
+     {
+      "$ref": "#/components/schemas/DefaultTextMarkupDocument"
+     }
+    ]
+   },
+   "duration": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "message": {
+    "type": "string"
+   },
+   "showMessage": {
+    "type": "boolean"
+   },
+   "start": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "status": {
+    "$ref": "#/components/schemas/TestStatus"
+   },
+   "stop": {
+    "format": "int64",
+    "type": "integer"
+   }
+  }
+ },
+ "TestResultParameterDto": {
+  "properties": {
+   "excluded": {
+    "type": "boolean"
+   },
+   "hidden": {
+    "type": "boolean"
+   },
+   "name": {
+    "type": "string"
+   },
+   "value": {
+    "type": "string"
+   }
+  },
+  "type": "object"
+ },
+ "TestResultScenarioStepParameter": {
+  "properties": {
+   "excluded": {
+    "type": "boolean"
+   },
+   "hidden": {
+    "type": "boolean"
+   },
+   "name": {
+    "type": "string"
+   },
+   "value": {
+    "type": "string"
+   }
+  },
+  "type": "object"
+ },
+ "TestResultScenarioV2Dto": {
+  "properties": {
+   "steps": {
+    "items": {
+     "oneOf": [
+      {
+       "$ref": "#/components/schemas/TestResultAttachmentStepDto"
+      },
+      {
+       "$ref": "#/components/schemas/TestResultBodyStepDto"
+      },
+      {
+       "$ref": "#/components/schemas/TestResultExpectedBodyStepDto"
+      }
+     ]
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "TestStatus": {
+  "enum": [
+   "failed",
+   "broken",
+   "passed",
+   "skipped",
+   "unknown",
+   "in_progress"
+  ],
+  "type": "string"
+ },
+ "TestStatusCount": {
+  "properties": {
+   "count": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "status": {
+    "$ref": "#/components/schemas/TestStatus"
+   }
+  },
+  "required": [
+   "count"
+  ],
+  "type": "object"
+ },
+ "TestTagDto": {
+  "properties": {
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "name": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "id",
+   "name"
+  ],
+  "type": "object"
+ },
+ "TextColorMark": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/TextMark"
+   }
+  ],
+  "properties": {
+   "attrs": {
+    "$ref": "#/components/schemas/Attrs"
+   }
+  }
+ },
+ "TextFillMark": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/TextMark"
+   }
+  ],
+  "properties": {
+   "attrs": {
+    "$ref": "#/components/schemas/Attrs"
+   }
+  }
+ },
+ "TextMark": {
+  "discriminator": {
+   "propertyName": "type"
+  },
+  "properties": {
+   "type": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "type"
+  ]
+ },
+ "TextMarkupDocument": {
+  "discriminator": {
+   "propertyName": "type"
+  },
+  "properties": {
+   "type": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "type"
+  ]
+ },
+ "TextParagraphNode": {
+  "properties": {
+   "marks": {
+    "items": {
+     "oneOf": [
+      {
+       "$ref": "#/components/schemas/BoldMark"
+      },
+      {
+       "$ref": "#/components/schemas/CodeMark"
+      },
+      {
+       "$ref": "#/components/schemas/ItalicMark"
+      },
+      {
+       "$ref": "#/components/schemas/LinkMark"
+      },
+      {
+       "$ref": "#/components/schemas/StrikeMark"
+      },
+      {
+       "$ref": "#/components/schemas/TextColorMark"
+      },
+      {
+       "$ref": "#/components/schemas/TextFillMark"
+      },
+      {
+       "$ref": "#/components/schemas/UnderlineMark"
+      }
+     ]
+    },
+    "type": "array"
+   },
+   "text": {
+    "type": "string"
+   }
+  },
+  "type": "object"
+ },
+ "TrScenarioStepDto": {
+  "discriminator": {
+   "propertyName": "type"
+  },
+  "properties": {
+   "type": {
+    "type": "string"
+   }
+  },
+  "required": [
+   "type"
+  ]
+ },
+ "TreeSelectionDto": {
+  "properties": {
+   "groupsExclude": {
+    "items": {
+     "items": {
+      "format": "int64",
+      "type": "integer"
+     },
+     "type": "array"
+    },
+    "type": "array",
+    "uniqueItems": true
+   },
+   "groupsInclude": {
+    "items": {
+     "items": {
+      "format": "int64",
+      "type": "integer"
+     },
+     "type": "array"
+    },
+    "type": "array",
+    "uniqueItems": true
+   },
+   "inverted": {
+    "type": "boolean"
+   },
+   "leafsExclude": {
+    "items": {
+     "format": "int64",
+     "type": "integer"
+    },
+    "type": "array",
+    "uniqueItems": true
+   },
+   "leafsInclude": {
+    "items": {
+     "format": "int64",
+     "type": "integer"
+    },
+    "type": "array",
+    "uniqueItems": true
+   },
+   "path": {
+    "items": {
+     "format": "int64",
+     "type": "integer"
+    },
+    "type": "array"
+   }
+  },
+  "type": "object"
+ },
+ "UnderlineMark": {
+  "allOf": [
+   {
+    "$ref": "#/components/schemas/TextMark"
+   }
+  ]
+ },
+ "WorkflowDto": {
+  "properties": {
+   "createdBy": {
+    "type": "string"
+   },
+   "createdDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "lastModifiedBy": {
+    "type": "string"
+   },
+   "lastModifiedDate": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "name": {
+    "type": "string"
+   },
+   "statuses": {
+    "items": {
+     "$ref": "#/components/schemas/StatusDto"
+    },
+    "type": "array"
+   }
+  },
+  "required": [
+   "id",
+   "name",
+   "statuses"
+  ],
+  "type": "object"
+ },
+ "WorkflowRowDto": {
+  "properties": {
+   "id": {
+    "format": "int64",
+    "type": "integer"
+   },
+   "name": {
+    "type": "string"
+   }
+  },
+  "type": "object"
+ }
+}
