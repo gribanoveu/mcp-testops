@@ -71,6 +71,8 @@ def _guard(fn):
             return _dump({"ok": False, "error": str(exc)})
         except httpx.HTTPError as exc:
             return _dump({"ok": False, "error": f"{type(exc).__name__}: {exc}"})
+        except Exception as exc:  # a surprise is still an answer, not a lost turn
+            return _dump({"ok": False, "error": f"{type(exc).__name__}: {exc}"})
 
     return wrapper
 
