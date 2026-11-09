@@ -2,6 +2,18 @@
 
 Что сделано, по этапам из `docs/05-plan.md`: одна строка на этап, новое — сверху.
 
+## 2026-11-09 — M3. Write-контур
+
+- `delete_test_case(force)` (`DELETE` + `202`), `update_test_plan` (тело `TestPlanPatchDto`, `clear` как в
+  `update_test_case`), `delete_test_plan` (`204`), `close_launch`/`reopen_launch` (`204`),
+  `delete_launch` (`204`). Все шесть собирают ответ через `_answer`, поэтому `accepted` от 202/204 видно
+  модели.
+- Тело патча теперь собирает общий `_patch_body` — раньше он был `_test_case_patch_body` и годился
+  только названием для кейсов; `TestPlanPatchDto` валидируется тем же тестом.
+- Набор закрыт: 30 инструментов (17 read + 13 write), в `TESTOPS_READ_ONLY=true` — 17; тестов 66.
+- Живой смоук «кейс → 3 шага → запуск → результат → close → удалить с force=true» не прогнан: токена стенда
+  нет, всё проверено `MockTransport`.
+
 ## 2026-11-09 — M2. История прогонов кейса
 
 - Добавлен 30-й инструмент `get_test_case_history` (`GET /api/testcase/history`): по id кейса отдаёт

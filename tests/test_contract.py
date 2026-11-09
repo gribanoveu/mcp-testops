@@ -60,15 +60,21 @@ def test_create_test_case_body():
 
 
 def test_update_test_case_body_drops_empty_strings():
-    body = testops._test_case_patch_body(False, name="Renamed", description="", precondition="")
+    body = testops._patch_body(False, name="Renamed", description="", precondition="")
     assert_valid("TestCasePatchV2Dto", body)
     assert body == {"name": "Renamed"}
 
 
 def test_update_test_case_body_clears_with_flag():
-    body = testops._test_case_patch_body(True, description="")
+    body = testops._patch_body(True, description="")
     assert_valid("TestCasePatchV2Dto", body)
     assert body == {"description": ""}
+
+
+def test_update_test_plan_body():
+    body = testops._patch_body(False, name="Renamed", baseRql="", treeSelection={"leafsInclude": [1]})
+    assert_valid("TestPlanPatchDto", body)
+    assert body == {"name": "Renamed", "treeSelection": {"leafsInclude": [1]}}
 
 
 def test_add_step_body():

@@ -31,11 +31,17 @@ READ_TOOLS = [
 WRITE_TOOLS = [
     "add_test_case_step",
     "add_test_result",
+    "close_launch",
     "create_launch",
     "create_test_case",
     "create_test_plan",
+    "delete_launch",
+    "delete_test_case",
+    "delete_test_plan",
+    "reopen_launch",
     "run_test_cases",
     "update_test_case",
+    "update_test_plan",
 ]
 
 

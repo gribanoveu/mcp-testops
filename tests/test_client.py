@@ -211,6 +211,67 @@ def test_search_without_query_is_an_error(api):
     assert answer == {"ok": False, "error": "rql or name is required"}
 
 
+def test_delete_test_case_sends_force(api):
+    seen = {}
+
+    def handler(request):
+        seen["method"] = request.method
+        seen["path"] = request.url.path
+        seen["query"] = dict(request.url.params)
+        return httpx.Response(202)
+
+    api(handler)
+    answer = json.loads(testops.delete_test_case(42, force=True))
+    assert answer == {"ok": True, "accepted": True, "testCaseId": 42, "forced": True}
+    assert seen["method"] == "DELETE"
+    assert seen["path"] == "/api/testcase/42"
+    assert seen["query"]["force"] == "true"
+
+
+def test_update_test_plan_sends_only_passed_fields(api):
+    seen = {}
+
+    def handler(request):
+        seen["method"] = request.method
+        seen["path"] = request.url.path
+        seen["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"id": 3, "name": "Plan", "projectId": 65})
+
+    api(handler)
+    answer = json.loads(testops.update_test_plan(3, name="Plan"))
+    assert answer == {"ok": True, "id": 3, "name": "Plan", "projectId": 65}
+    assert seen["method"] == "PATCH"
+    assert seen["path"] == "/api/testplan/3"
+    assert seen["body"] == {"name": "Plan"}
+
+
+def test_delete_test_plan_is_accepted(api):
+    api(lambda request: httpx.Response(204))
+    assert json.loads(testops.delete_test_plan(3)) == {"ok": True, "accepted": True, "testPlanId": 3}
+
+
+def test_close_and_reopen_launch(api):
+    seen = []
+
+    def handler(request):
+        seen.append(request.url.path)
+        return httpx.Response(204)
+
+    api(handler)
+    assert json.loads(testops.close_launch(4)) == {
+        "ok": True, "accepted": True, "launchId": 4, "action": "closed"
+    }
+    assert json.loads(testops.reopen_launch(4)) == {
+        "ok": True, "accepted": True, "launchId": 4, "action": "reopened"
+    }
+    assert seen == ["/api/launch/4/close", "/api/launch/4/reopen"]
+
+
+def test_delete_launch_is_accepted(api):
+    api(lambda request: httpx.Response(204))
+    assert json.loads(testops.delete_launch(4)) == {"ok": True, "accepted": True, "launchId": 4}
+
+
 def test_get_test_case_history_compacts_launch(api):
     seen = {}
 

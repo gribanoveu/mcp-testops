@@ -92,14 +92,20 @@
 Задачи:
 
 1. `create_launch` (расширить: `releaseId`, `tags`, `links`), `close_launch`, `reopen_launch`, `delete_launch`.
-2. `add_test_result` с валидацией `TestStatus` **до** запроса.
+   Сделано; `delete_test_case`, `update_test_plan`, `delete_test_plan` — тоже (без них не закрывается
+   сценарий и не убрать за собой артефакты).
+2. `add_test_result` с валидацией `TestStatus` **до** запроса. Сделано.
 3. `add_test_case_step` (`ScenarioStepCreateDto`, ровно один из `body`/`attachment_id`/`shared_step_id`).
-4. `run_test_cases` — дописать `assignees`, `tags`, `release_id`, `filter_id`/`rql` в `selection`.
-5. `update_test_case` — параметр `clear`, чтобы `""` не затирал поля случайно.
+   Сделано.
+4. `run_test_cases` — дописать `assignees`, `tags`, `release_id`, `filter_id` в `selection`. Сделано;
+   `rql` сознательно нет — такого поля в `TestCaseTreeSelectionDto` не существует (вопрос 12).
+5. `update_test_case` — параметр `clear`, чтобы `""` не затирал поля случайно. Сделано; тот же `clear`
+   у `update_test_plan`.
 
 **Критерии приёмки:**
-- сценарий «создать кейс с тремя шагами → прогнать в новом запуске → записать результат → закрыть запуск»
-  проходит целиком на тестовом проекте;
+- сценарий «создать кейс с тремя шагами → прогнать в новом запуске → записать результат → закрыть
+  запуск → удалить за собой кейс с `force=true` и запуск» проходит целиком на тестовом проекте
+  (проверяется живым смоуком, когда есть токен; в CI — `MockTransport`);
 - тесты: тело `TestCaseBulkRunNewLaunchDto` и `ScenarioStepCreateDto` валидируются схемой;
 - неверный `status` даёт `{"ok": false, "error": "status must be one of …"}` и **не** ходит в сеть
   (проверяется MockTransport'ом, который считает вызовы);

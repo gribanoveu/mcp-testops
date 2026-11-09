@@ -298,7 +298,7 @@ def _test_case_body(
     )
 
 
-def _test_case_patch_body(clear: bool, **fields: Any) -> dict:
+def _patch_body(clear: bool, **fields: Any) -> dict:
     """PATCH omits what was not passed; "" clears a field only with clear=True."""
     body = {}
     for key, value in fields.items():
@@ -745,11 +745,22 @@ def update_test_case(
         "automated": automated,
         "duration": duration,
     }
-    body = _test_case_patch_body(clear, **fields)
+    body = _patch_body(clear, **fields)
     if not body:
         raise TestOpsError("nothing to update: pass at least one field")
     data = _api("PATCH", f"/api/testcase/{test_case_id}", body=body)
     return _answer(data, **_pick(data, ("id", "name", "projectId")))
+
+
+@_write
+def delete_test_case(test_case_id: int, force: bool = False) -> str:
+    """Delete a test case; the API answers 202 and moves it to the trash.
+
+    Without force a case that has run results may stay; force=true deletes it anyway,
+    together with its scenario. Restoring a case is not exposed as a tool.
+    """
+    data = _api("DELETE", f"/api/testcase/{test_case_id}", params={"force": True if force else None})
+    return _answer(data, testCaseId=test_case_id, forced=force)
 
 
 @_write
@@ -844,6 +855,40 @@ def create_test_plan(
     )
     data = _api("POST", "/api/testplan", body=body)
     return _answer(data, **_pick(data, ("id", "name", "projectId")))
+
+
+@_write
+def update_test_plan(
+    test_plan_id: int,
+    name: str = "",
+    base_rql: str = "",
+    tree_id: int | None = None,
+    tree_selection_json: str = "",
+    clear: bool = False,
+) -> str:
+    """Update fields of a test plan; only the arguments you pass are sent.
+
+    An empty string means "leave the field alone" unless clear=true, where an empty string
+    clears the field. tree_selection_json: {"leafsInclude": [1001], "inverted": false}.
+    """
+    body = _patch_body(
+        clear,
+        name=name,
+        baseRql=base_rql,
+        treeId=tree_id,
+        treeSelection=_json_arg(tree_selection_json, "tree_selection_json"),
+    )
+    if not body:
+        raise TestOpsError("nothing to update: pass at least one field")
+    data = _api("PATCH", f"/api/testplan/{test_plan_id}", body=body)
+    return _answer(data, **_pick(data, ("id", "name", "projectId")))
+
+
+@_write
+def delete_test_plan(test_plan_id: int) -> str:
+    """Delete a test plan; the API answers 204. The test cases themselves stay."""
+    data = _api("DELETE", f"/api/testplan/{test_plan_id}")
+    return _answer(data, testPlanId=test_plan_id)
 
 
 # --- tools: launches and results --------------------------------------------
@@ -1001,6 +1046,27 @@ def create_launch(
     )
     data = _api("POST", "/api/launch", body=body)
     return _answer(data, **_pick(data, ("id", "name", "projectId")))
+
+
+@_write
+def close_launch(launch_id: int) -> str:
+    """Close a launch; the API answers 204. Results are read-only afterwards."""
+    data = _api("POST", f"/api/launch/{launch_id}/close")
+    return _answer(data, launchId=launch_id, action="closed")
+
+
+@_write
+def reopen_launch(launch_id: int) -> str:
+    """Reopen a closed launch so results can be added again; the API answers 204."""
+    data = _api("POST", f"/api/launch/{launch_id}/reopen")
+    return _answer(data, launchId=launch_id, action="reopened")
+
+
+@_write
+def delete_launch(launch_id: int) -> str:
+    """Delete a launch together with all its results; the API answers 204."""
+    data = _api("DELETE", f"/api/launch/{launch_id}")
+    return _answer(data, launchId=launch_id)
 
 
 @_write

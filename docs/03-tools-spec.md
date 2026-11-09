@@ -147,7 +147,7 @@ scenario_json = {"steps": [{"type": "body", "body": "Открыть форму"}
 
 ### `delete_test_case(test_case_id: int, force: bool = False) -> str`
 
-`DELETE /api/testcase/{test_case_id}?force=<bool>` → `202`. Возвращаем `{ok: true, accepted: true}`.
+`DELETE /api/testcase/{test_case_id}?force=<bool>` → `202`. Возвращаем `{ok: true, accepted: true, testCaseId, forced}`.
 Docstring: без `force` кейс, у которого есть результаты прогонов, может не удалиться.
 
 ### `add_test_case_step(test_case_id: int, body: str = None, parent_step_id: int = None,
@@ -174,13 +174,14 @@ attachment_id: int = None, shared_step_id: int = None) -> str`
 
 `POST /api/testplan`, тело `TestPlanCreateDto` (`name`, `projectId`, `baseRql`, `treeId`, `treeSelection`).
 
-### `update_test_plan(test_plan_id: int, name=None, base_rql=None, tree_id=None, tree_selection_json=None) -> str`
+### `update_test_plan(test_plan_id: int, name="", base_rql="", tree_id=None, tree_selection_json="", clear: bool = False) -> str`
 
-`PATCH /api/testplan/{test_plan_id}`, тело `TestPlanPatchDto`.
+`PATCH /api/testplan/{test_plan_id}`, тело `TestPlanPatchDto` — только переданные поля; `clear=true`
+означает «пустая строка очищает поле» (как в `update_test_case`). Тело собирает общий `_patch_body`.
 
 ### `delete_test_plan(test_plan_id: int) -> str`
 
-`DELETE /api/testplan/{test_plan_id}`.
+`DELETE /api/testplan/{test_plan_id}` → `204`; возвращаем `{ok, accepted, testPlanId}`. Сами кейсы не удаляются.
 
 ---
 
@@ -219,12 +220,13 @@ message, trace, start, stop}`.
 
 ### `close_launch(launch_id: int) -> str` / `reopen_launch(launch_id: int) -> str`
 
-`POST /api/launch/{launch_id}/close` и `/reopen` — тела нет. Ответ может быть пустым (успех) — возвращаем
-`{ok: true, launch_id, action: "closed"}`.
+`POST /api/launch/{launch_id}/close` и `/reopen` — тела нет, спека объявляет `204`. Возвращаем
+`{ok: true, accepted: true, launchId, action: "closed"|"reopened"}`.
 
 ### `delete_launch(launch_id: int) -> str`
 
-`DELETE /api/launch/{launch_id}` → `204`. Docstring: удаляются и все результаты прогона.
+`DELETE /api/launch/{launch_id}` → `204`; возвращаем `{ok, accepted, launchId}`. Docstring: удаляются и все
+результаты прогона.
 
 ### `add_test_result(launch_id: int, name: str, status: str, test_case_id: int = None, duration: int = None,
 message: str = None, trace: str = None, start: int = None, stop: int = None, description=None,
