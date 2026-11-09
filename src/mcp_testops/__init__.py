@@ -587,8 +587,10 @@ def create_test_case(
     JSON-string arguments:
       tags_json          [{"id": 3, "name": "smoke"}]  (the API requires the tag id)
       links_json         [{"name": "JIRA", "type": "issue", "url": "https://jira/browse/ABC-1"}]
-      members_json       [{"id": 7, "name": "ivanov", "role": "MEMBER"}]
-      custom_fields_json [{"customField": {"id": 12}, "name": "value"}]
+      members_json       [{"id": 7, "name": "ivanov", "role": {"id": 1, "name": "MEMBER"}}]
+                         (role is an object RoleDto, not a plain string)
+      custom_fields_json [{"customField": {"id": 12, "name": "Severity"}, "name": "high"}]
+                         (the API requires both id and name of the custom field)
       scenario_json      {"steps": [{"type": "body", "body": "Open the form"}]}
     Ids for status_id, workflow_id and test_layer_id come from list_statuses and
     list_reference. More steps are added with add_test_case_step.
@@ -780,8 +782,9 @@ def list_launches(
 ) -> str:
     """List launches of a project: id, name, closed, createdDate, statistic.
 
-    statistic is {passed, failed, broken, skipped, unknown} as counts. The API answers
-    with two different launch shapes; both are read into this summary.
+    statistic is {passed, failed, broken, skipped, unknown} as counts; it is absent when the
+    API returns a launch shape without one. The API answers with two different launch
+    shapes; both are read into this summary.
     project_id defaults to TESTOPS_PROJECT_ID; sort defaults to "created_date,DESC".
     """
     pid = _pid(project_id)
@@ -795,7 +798,8 @@ def list_launches(
     content = []
     for item in res["content"]:
         summary = _pick(item, ("id", "name", "closed", "createdDate"))
-        summary["statistic"] = _statistic(item.get("statistic"))
+        if "statistic" in item:
+            summary["statistic"] = _statistic(item["statistic"])
         content.append(summary)
     res["content"] = content
     return {"ok": True, "projectId": pid, **res}
@@ -918,11 +922,14 @@ def run_test_cases(
 
     Select the cases with one of: ids (comma separated or JSON array of tree leaf ids,
     becomes selection.leafsInclude), leafs_include (explicit JSON array) or filter_id
-    (saved filter). The API field is leafsInclude: there is no leafIds and no rql in
-    the selection. assignees: comma separated user logins;
-    tags_json: [{"id": 3, "name": "regress"}]. Returns {ok, launchId, name, projectId}.
+    (saved filter); ids and leafs_include are mutually exclusive. The API field is
+    leafsInclude: there is no leafIds and no rql in the selection. assignees: comma
+    separated user logins; tags_json: [{"id": 3, "name": "regress"}].
+    Returns {ok, launchId, name, projectId}.
     """
     pid = _pid(project_id)
+    if leafs_include and ids:
+        raise TestOpsError("pass either ids or leafs_include, not both")
     selected = _ids(leafs_include, "leafs_include") if leafs_include else _ids(ids, "ids")
     if not selected and filter_id is None:
         raise TestOpsError("one of ids, leafs_include, filter_id is required")
@@ -958,7 +965,7 @@ def api_request(method: str, path: str, params_json: str = "", body_json: str = 
     verb = (method or "").strip().upper()
     if verb not in ALLOWED_METHODS:
         raise TestOpsError(f"method must be one of {', '.join(ALLOWED_METHODS)}")
-    if not path.startswith("/api"):
+    if not (path == "/api" or path.startswith("/api/")):
         raise TestOpsError("path must start with /api")
     for prefix in FORBIDDEN_PREFIXES:
         if path.startswith(prefix):

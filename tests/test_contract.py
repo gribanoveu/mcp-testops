@@ -46,6 +46,8 @@ def test_create_test_case_body():
         tags=[{"id": 3, "name": "smoke"}],
         links=[{"name": "JIRA", "type": "issue", "url": "https://jira/browse/ABC-1"}],
         scenario={"steps": [{"type": "body", "body": "Open the form"}]},
+        members=[{"id": 7, "name": "ivanov", "role": {"id": 1, "name": "MEMBER"}}],
+        custom_fields=[{"customField": {"id": 12, "name": "Severity"}, "name": "high"}],
         automated=True,
     )
     # TestCaseScenarioV2Dto.steps is oneOf over four DTOs that differ only by optional

@@ -95,7 +95,22 @@ def test_list_launches_reads_launch_shape(api):
     api(lambda request: httpx.Response(200, json=LAUNCH_PAGE))
     answer = json.loads(testops.list_launches(project_id=65))
     assert answer["content"][0]["closed"] is True
-    assert answer["content"][0]["statistic"] == {}
+    assert "statistic" not in answer["content"][0]
+
+
+def test_add_test_result_rejects_status_without_a_request(api):
+    api(lambda request: pytest.fail("invalid status must not reach the stand"))
+    answer = json.loads(testops.add_test_result(launch_id=10, name="x", status="ok"))
+    assert answer["ok"] is False
+    assert answer["error"].startswith("status must be one of")
+
+
+def test_run_test_cases_rejects_ids_with_leafs_include(api):
+    api(lambda request: pytest.fail("conflicting selection must not reach the stand"))
+    answer = json.loads(
+        testops.run_test_cases(launch_name="Regress", project_id=65, ids="1", leafs_include="[2]")
+    )
+    assert answer == {"ok": False, "error": "pass either ids or leafs_include, not both"}
 
 
 def test_202_is_accepted(api):

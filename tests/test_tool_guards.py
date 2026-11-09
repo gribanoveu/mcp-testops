@@ -63,6 +63,12 @@ def test_api_request_refuses_paths_outside_api(fresh):
     assert answer == {"ok": False, "error": "path must start with /api"}
 
 
+def test_api_request_refuses_prefix_lookalikes(fresh):
+    module = fresh()
+    answer = json.loads(module.api_request("GET", "/apifoo"))
+    assert answer == {"ok": False, "error": "path must start with /api"}
+
+
 def test_api_request_refuses_secret_endpoints(fresh):
     module = fresh()
     answer = json.loads(module.api_request("GET", "/api/integration"))
