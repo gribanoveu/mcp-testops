@@ -40,9 +40,24 @@ MCP-сервер (stdio) поверх API Allure TestOps: проекты, тес
 
 ## Установка
 
-Два способа: готовый бинарник (Python не нужен) и пакет из Python.
+Три способа: запуск одной командой (без установки), готовый бинарник и пакет Python.
 
-### 1. Бинарник из Releases
+### 1. Одной командой
+
+```bash
+uvx mcp-testops                            # Python, без установки (PyPI)
+npx -y @gribanoveu/mcp-testops             # Node, тот же сервер (обёртка над бинарником)
+```
+
+`npx`-обёртка скачивает бинарник своей платформы из этого же Release в `~/.cache/mcp-testops/` и
+запускает его; stdout у неё чистый, всё служебное идёт в stderr — протокол MCP не ломается.
+
+> Пока пакет не опубликован в PyPI и npm, эти две команды не работают — используйте бинарник или
+> колесо. Публикация настроена: `.github/workflows/publish-pypi.yml` (trusted publishing, нужен
+> один раз создать проект `mcp-testops` на PyPI) и job `npm` в релизном workflow (нужен секрет
+> `NPM_TOKEN`).
+
+### 2. Бинарник из Releases
 
 Скачайте файл под свою систему из [Releases](https://github.com/gribanoveu/mcp-testops/releases),
 распакуйте и сделайте исполняемым (macOS/Linux):
@@ -147,7 +162,9 @@ Cursor читает MCP-серверы из `mcp.json`: глобально — `
 
 Остальные клиенты, которые запускают локальную команду по stdio (Claude Desktop,
 `~/.config/...`-подобные), используют ту же пару `command`/`args` плюс свой `env`; в Claude Desktop это
-`claude_desktop_config.json` с тем же объектом `mcpServers`.
+`claude_desktop_config.json` с тем же объектом `mcpServers`. Если ставите одной командой, то вместо пути
+к бинарнику в `command`/`args` пишется `"uvx"` / `["mcp-testops"]` или `"npx"` /
+`["-y", "@gribanoveu/mcp-testops"]`.
 
 ## Ограничения и риски
 
@@ -219,6 +236,7 @@ testops-mcp/
 ├── openapi/              # выборки из спеки: api-inventory.md, key-schemas.json
 ├── docs/                 # аналитика API и план, по которым писался сервер (01–06)
 ├── packaging/entry.py     # точка входа для standalone-бинарника
+├── npm/                  # обёртка `npx -y @gribanoveu/mcp-testops`
 ├── skills/testops-mcp/    # SKILL.md — как пользоваться сервером агенту
 ├── AGENTS.md             # правила работы над сервером
 ├── CHANGELOG.md          # что сделано, по этапам

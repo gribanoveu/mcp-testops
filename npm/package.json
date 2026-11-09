@@ -1,0 +1,28 @@
+{
+  "name": "@gribanoveu/mcp-testops",
+  "version": "0.1.2",
+  "description": "MCP server for Allure TestOps: launches the platform binary from the GitHub release",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "allure",
+    "testops",
+    "testing"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gribanoveu/mcp-testops.git"
+  },
+  "homepage": "https://github.com/gribanoveu/mcp-testops",
+  "bin": {
+    "mcp-testops": "cli.js"
+  },
+  "files": [
+    "cli.js",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}
