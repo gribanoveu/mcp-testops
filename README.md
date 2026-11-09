@@ -9,9 +9,10 @@ MCP-сервер (stdio) поверх API Allure TestOps: проекты, тес
 чего не хватает, добавляется именованным инструментом с телом из схемы — почему именно так,
 в `docs/03-tools-spec.md` §7.
 
-Источник правды по контракту — снимок спеки `openapi/api-docs.json`: `allure-testops-service` `527u04`,
-снят 2026-11-09 (634 пути, 845 операций, 803 схемы). Тела запросов и формы ответов проверяются по нему
-контрактными тестами.
+Контракт — API `allure-testops-service` `527u04`, снимок от 2026-11-09 (634 пути, 845 операций, 803 схемы).
+Полного снимка в репозитории нет: `scripts/refresh_spec.sh` получает его с вашего стенда в
+`openapi/api-docs.json`, и тогда контрактные тесты сверяют по нему тела запросов и формы ответов.
+Лицензия — MIT (`LICENSE`).
 
 ## Инструменты
 
@@ -54,7 +55,7 @@ python -m mcp_testops                          # stdio; без TESTOPS_TOKEN п�
 | Переменная | Обязательна | По умолчанию | Смысл |
 |---|---|---|---|
 | `TESTOPS_TOKEN` | да | — | API-токен; без него старт прерывается с `TESTOPS_TOKEN is not set` |
-| `TESTOPS_BASE_URL` | нет | `https://testops.moscow.alfaintra.net` | хост стенда |
+| `TESTOPS_BASE_URL` | нет | `https://testops.net` | хост стенда |
 | `TESTOPS_PROJECT_ID` | нет | — | проект по умолчанию для инструментов без `project_id` |
 | `TESTOPS_VERIFY_SSL` | нет | `false` | проверка TLS; внутренний стенд на самоподписанном CA |
 | `TESTOPS_TIMEOUT` | нет | `60` | таймаут запроса, секунды |
@@ -73,7 +74,7 @@ python -m mcp_testops                          # stdio; без TESTOPS_TOKEN п�
       "type": "local",
       "command": ["python", "-m", "mcp_testops"],
       "environment": {
-        "TESTOPS_BASE_URL": "https://testops.moscow.alfaintra.net",
+        "TESTOPS_BASE_URL": "https://testops.net",
         "TESTOPS_TOKEN": "****",
         "TESTOPS_PROJECT_ID": "65",
         "TESTOPS_READ_ONLY": "true"
@@ -103,7 +104,7 @@ python -m mcp_testops                          # stdio; без TESTOPS_TOKEN п�
 
 ```bash
 python -m py_compile src/mcp_testops/*.py src/mcp_testops/tools/*.py
-pytest -q                                        # 68 тестов: контракт, MockTransport, гарды
+pytest -q                                        # 56 тестов; 12 контрактных — со снимком спеки
 mcp version                                      # версия официального SDK
 mcp dev src/mcp_testops/__init__.py              # Inspector: что увидит модель
 python -m mcp_testops                            # stdio, читает TESTOPS_* из env
@@ -116,8 +117,8 @@ scripts/refresh_spec.sh          # curl /api-docs/ в openapi/api-docs.json.new 
 ```
 
 Скрипт не перезаписывает `openapi/api-docs.json`: сначала читаются версия и дифф, потом снимок меняется
-и гоняются `pytest -q`. Если снимка в чекауте нет, `tests/test_contract.py` помечается skipped, остальные
-тесты работают.
+и гоняются `pytest -q`. Полного снимка в репозитории нет — его получают этим скриптом со своего стенда;
+пока снимка нет, `tests/test_contract.py` помечается skipped, остальные 56 тестов работают.
 
 ## Структура
 
@@ -133,12 +134,12 @@ testops-mcp/
 │   ├── server.py         # mcp = MCPServer(...) и _write (read-only)
 │   └── tools/            # проекты, кейсы, планы, запуски, справочники
 ├── tests/                # test_contract.py, test_client.py, test_tool_guards.py
-├── scripts/refresh_spec.sh
-├── openapi/              # снимок спеки и его выборки: api-docs.json, api-inventory.md, key-schemas.json
-├── docs/                 # аналитика, по которой писался сервер (01–06)
-├── reference/            # чужой пример, снимок только для чтения
+├── scripts/refresh_spec.sh  # получить снимок спеки с вашего стенда
+├── openapi/              # выборки из спеки: api-inventory.md, key-schemas.json
+├── docs/                 # аналитика API и план, по которым писался сервер (01–06)
 ├── AGENTS.md             # правила работы над сервером
 ├── CHANGELOG.md          # что сделано, по этапам
+├── LICENSE               # MIT
 └── pyproject.toml        # hatchling, mcp>=2,<3, httpx
 ```
 
@@ -151,7 +152,7 @@ testops-mcp/
 | `docs/01-contract.md` | устройство API: авторизация, пагинация, ошибки, AQL, полиморфные ответы |
 | `docs/02-domain-model.md` | сущности и связи: Project → TestCase → TestPlan → Launch → TestResult |
 | `docs/03-tools-spec.md` | спецификация инструментов: сигнатура, эндпоинт, тело, ответ |
-| `docs/04-current-implementation.md` | разбор чужого примера и его ошибок (Д1–Д11) — «чего не делать» |
+| `docs/04-current-implementation.md` | разбор чужого примера и его ошибок (Д1–Д11) — «чего не делать»; сам снимок примера из репозитория убран |
 | `docs/05-plan.md` | этапы M0–M4 и критерии приёмки |
 | `docs/06-open-questions.md` | что проверить на стенде: авторизация, синтаксис AQL, лимиты, дерево |
 

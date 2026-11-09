@@ -2,6 +2,18 @@
 
 Что сделано, по этапам из `docs/05-plan.md`: одна строка на этап, новое — сверху.
 
+## 2026-11-09 — Публикация
+
+- Лицензия MIT (`LICENSE`), в `pyproject.toml` — `license = "MIT"` и `license-files`.
+- Из репозитория убраны `openapi/api-docs.json` (снимок контракта конкретного стенда) и `reference/`
+  (снимок чужого репозитория). Выборки `openapi/api-inventory.md` и `key-schemas.json` остались.
+- Внешний хост стенда заменён на `https://testops.net` в `config.py`, README, документации и
+  `scripts/refresh_spec.sh`.
+- Без снимка спеки контрактные тесты помечаются skipped: `pytest -q` даёт 56 passed, 1 skipped;
+  снимок кладётся в `openapi/api-docs.json` через `scripts/refresh_spec.sh`, и тестов снова 68.
+- README, `docs/01`, `docs/04`, `docs/05`, `docs/06` и `AGENTS.md` больше не обещают файлов, которых
+  в репозитории нет.
+
 ## 2026-11-09 — M4. Эксплуатация и безопасность
 
 - Логи: `client._send` пишет только `METHOD /path -> status in N ms` — ни query, ни заголовков, ни тел;

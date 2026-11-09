@@ -4,7 +4,7 @@ import os
 
 
 SERVER_NAME = os.getenv("MCP_SERVER_NAME", "testops")
-BASE_URL = os.getenv("TESTOPS_BASE_URL", "https://testops.moscow.alfaintra.net").rstrip("/")
+BASE_URL = os.getenv("TESTOPS_BASE_URL", "https://testops.net").rstrip("/")
 TOKEN = os.getenv("TESTOPS_TOKEN")
 DEFAULT_PROJECT_ID = os.getenv("TESTOPS_PROJECT_ID")
 TIMEOUT = float(os.getenv("TESTOPS_TIMEOUT", "60"))

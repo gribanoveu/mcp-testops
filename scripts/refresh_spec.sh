@@ -13,7 +13,7 @@ set -eu
 
 cd "$(dirname "$0")/.."
 
-BASE_URL=${TESTOPS_BASE_URL:-https://testops.moscow.alfaintra.net}
+BASE_URL=${TESTOPS_BASE_URL:-https://testops.net}
 OUT=${1:-openapi/api-docs.json.new}
 CURRENT=openapi/api-docs.json
 
