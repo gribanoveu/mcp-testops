@@ -74,13 +74,14 @@
 6. `list_launches`: терпимый разбор `oneOf` (`LaunchDto` и `LaunchPreviewDto`), компактная сводка
    `{id, name, closed, createdDate, statistic}`. Сделано в M1.
 7. Компактные ответы: убрать `*Html`, для листингов — без `indent`. Сделано в M1.
+8. `get_test_case_history(test_case_id, project_id?, launch_id?, search?, page, size, sort)` —
+   `GET /api/testcase/history`, ответ на «в каких прогонах гонялся кейс». Добавлен сверх исходных 29
+   по решению от 2026-11-09 (вопрос 13): иначе этот шаг сценария было нечем закрыть.
 
 **Критерии приёмки:**
-- сценарий «найти кейсы по тегу → открыть кейс → прочитать шаги → найти прогоны проекта и их
-  результаты» выполняется только именованными инструментами, без обходных путей;
-- «в каких прогонах гонялся этот кейс» **пока не отвечается**: для этого есть
-  `GET /api/testcase/history?projectId&testCaseId` → `PageTestResultHistoryDto` (в каждом элементе
-  вложен `launch`), но такого инструмента в наборе нет — `../docs/06-open-questions.md`, вопрос 13;
+- сценарий «найти кейсы по тегу → открыть кейс → прочитать шаги → найти прогоны, где он гонялся»
+  выполняется только именованными инструментами: `search_test_cases` → `get_test_case` →
+  `get_test_case_steps` → `get_test_case_history` → `get_test_result`;
 - тест на каждый новый инструмент с записанным ответом (MockTransport), включая форму `LaunchPreviewDto`;
 - живой смоук: `list_projects` → `list_reference("workflow", 65)` → `search_test_cases(rql='name ~ "a"')`.
 

@@ -1,6 +1,6 @@
 # 03. Спецификация инструментов
 
-29 инструментов: 16 read, 13 write. Generic `api_request` сознательно не выводим — почему, в §7.
+30 инструментов: 17 read, 13 write. Generic `api_request` сознательно не выводим — почему, в §7.
 Ниже — сигнатура, эндпоинт, тело, что возвращаем и на что наступить нельзя. Схемы — в
 `../openapi/key-schemas.json`, эндпоинты — в `../openapi/api-inventory.md`.
 
@@ -56,6 +56,7 @@
 | 26 | `delete_launch` | write | `DELETE /api/launch/{id}` |
 | 27 | `add_test_result` | write | `POST /api/testresult` |
 | 28 | `run_test_cases` | write | `POST /api/testcase/bulk/run/new` |
+| 29 | `get_test_case_history` | read | `GET /api/testcase/history` |
 
 ---
 
@@ -95,6 +96,15 @@
   `{id, body, expectedResult, attachmentId, sharedStepId, children:[...]}`.
 - `as_tree=False`: отдаём `scenarioSteps` как есть (словарь по id).
 - Вложение `attachments` (толстые DTO) не отдаём — только `attachmentId`; за содержимым — отдельно.
+
+### `get_test_case_history(test_case_id: int, project_id=None, launch_id: int = None, search="",
+page=0, size=50, sort="") -> str`
+
+`GET /api/testcase/history` с `projectId`, `testCaseId`, `launchId?`, `search?` → `PageTestResultHistoryDto`.
+Отвечает на вопрос «в каких прогонах гонялся кейс»: строка
+`{testResultId, launchId, launchName, status, start, stop, duration, message, testedBy}`; в схеме `launch` —
+`IdAndNameOnlyDto`, поэтому id и имя разворачиваются в полях строки. За полным результатом —
+`get_test_result(testResultId)` из этой же строки.
 
 ### `search_test_cases(project_id=None, rql: str = "", name: str = "", deleted: bool = False, page=0, size=50, sort="") -> str`
 
@@ -291,7 +301,7 @@ filter_id: int = None, assignees: str = "", tags_json=None, release_id: int = No
 
 Что вместо него:
 
-- всё, что реально нужно агенту, закрыто 29 именованными инструментами с проверенными телами;
+- всё, что реально нужно агенту, закрыто 30 именованными инструментами с проверенными телами;
 - справочники (`list_statuses`, `list_reference`) закрывают Д6 — без них нечем заполнить `statusId`,
   `workflowId`, `testLayerId`;
 - чего нет среди инструментов (дерево, общие шаги, дефекты, вложения), через MCP недоступно вообще:

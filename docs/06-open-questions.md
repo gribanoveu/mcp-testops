@@ -141,18 +141,18 @@ https://testops.moscow.alfaintra.net/api/project?size=1` → `200`. Контро
 **Влияет на:** появится ли у `run_test_cases` аргумент `rql`; до ответа его нет — неизвестное поле
 в тело не отправляем.
 
-## 13. Чем ответить «в каких прогонах гонялся этот кейс»
+## 13. Чем ответить «в каких прогонах гонялся этот кейс» — закрыт
 
-**Что неизвестно.** В наборе из 29 инструментов такого ответа нет: `list_test_results` требует
-`launchId`, а `list_launches` умеет только `projectId`, `search`, `filterId` — по id кейса прогоны не
-ищутся. При этом эндпоинт есть: `GET /api/testcase/history?projectId&testCaseId&launchId?` →
+**Что неизвестно.** В исходном наборе из 29 инструментов такого ответа не было: `list_test_results`
+требует `launchId`, а `list_launches` умеет только `projectId`, `search`, `filterId` — по id кейса
+прогоны не ищутся. При этом эндпоинт есть: `GET /api/testcase/history?projectId&testCaseId&launchId?` →
 `PageTestResultHistoryDto`, каждый элемент `TestResultHistoryDto` несёт `launch`, `status`, `start`,
 `duration`, `message`.
 
-**Как закрыть:** решить, входит ли ответ на этот вопрос в задачу. Если да — добавить тридцатый инструмент
-`get_test_case_history(test_case_id, project_id, page?, size?)` с компактным ответом
-`{launchId, launchName, status, start, duration}`; тогда критерий M2 «найти прогоны с этим кейсом» станет
-выполнимым. Если нет — сценарий считается закрытым до шагов кейса.
+**Решено 2026-11-09:** добавлен тридцатый инструмент
+`get_test_case_history(test_case_id, project_id?, launch_id?, search?, page, size, sort)` с ответом
+`{testResultId, launchId, launchName, status, start, stop, duration, message, testedBy}`, тест на путь,
+параметры и компактную строку — в `tests/test_client.py`. Спека инструментов — `docs/03-tools-spec.md` §3.
 
-**Влияет на:** критерий приёмки M2 (`docs/05-plan.md`) и состав набора инструментов (сейчас 23 из 29,
-generic-вызова нет — обходного пути к `/api/testcase/history` тоже нет).
+**Влияет на:** критерий приёмки M2 (`docs/05-plan.md`) — теперь выполним целиком; состав набора — 30
+инструментов (17 read + 13 write) без generic-вызова.

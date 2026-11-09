@@ -555,6 +555,47 @@ def get_test_case_steps(test_case_id: int, as_tree: bool = True) -> str:
 
 @mcp.tool()
 @_guard
+def get_test_case_history(
+    test_case_id: int,
+    project_id: int | None = None,
+    launch_id: int | None = None,
+    search: str = "",
+    page: int = 0,
+    size: int = DEFAULT_PAGE_SIZE,
+    sort: str = "",
+) -> str:
+    """Which launches ran a test case, and with what result.
+
+    Answers "where was this case run": each row is {testResultId, launchId, launchName, status,
+    start, stop, duration, message, testedBy}. launch_id narrows to one launch, search narrows by
+    result text. project_id defaults to TESTOPS_PROJECT_ID. For the full result of one row use
+    get_test_result(testResultId).
+    """
+    pid = _pid(project_id)
+    res = _paged(
+        "/api/testcase/history",
+        {
+            "projectId": pid,
+            "testCaseId": test_case_id,
+            "launchId": launch_id,
+            "search": search or None,
+        },
+        page=page,
+        size=size,
+        sort=sort,
+    )
+    rows = []
+    for item in res["content"]:
+        launch = item.get("launch") or {}
+        row = {"testResultId": item.get("id"), "launchId": launch.get("id"), "launchName": launch.get("name")}
+        row.update(_pick(item, ("status", "start", "stop", "duration", "message", "testedBy")))
+        rows.append(row)
+    res["content"] = rows
+    return {"ok": True, "projectId": pid, "testCaseId": test_case_id, **res}
+
+
+@mcp.tool()
+@_guard
 def search_test_cases(
     project_id: int | None = None,
     rql: str = "",

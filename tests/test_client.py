@@ -211,6 +211,47 @@ def test_search_without_query_is_an_error(api):
     assert answer == {"ok": False, "error": "rql or name is required"}
 
 
+def test_get_test_case_history_compacts_launch(api):
+    seen = {}
+
+    def handler(request):
+        seen["path"] = request.url.path
+        seen["query"] = dict(request.url.params)
+        return httpx.Response(
+            200,
+            json={
+                "content": [
+                    {"id": 91, "launch": {"id": 4, "name": "Regress"}, "status": "failed",
+                     "duration": 100, "createdBy": "ivanov"},
+                    {"id": 92, "status": "passed"},
+                ],
+                "totalElements": 2,
+                "totalPages": 1,
+                "number": 0,
+                "size": 50,
+            },
+        )
+
+    api(handler)
+    answer = json.loads(testops.get_test_case_history(42, project_id=65, launch_id=4))
+    assert answer == {
+        "ok": True,
+        "projectId": 65,
+        "testCaseId": 42,
+        "content": [
+            {"testResultId": 91, "launchId": 4, "launchName": "Regress", "status": "failed", "duration": 100},
+            {"testResultId": 92, "launchId": None, "launchName": None, "status": "passed"},
+        ],
+        "totalElements": 2,
+        "totalPages": 1,
+        "number": 0,
+        "size": 50,
+    }
+    assert seen["path"] == "/api/testcase/history"
+    assert seen["query"]["testCaseId"] == "42"
+    assert seen["query"]["launchId"] == "4"
+
+
 def test_validate_aql_sends_query(api):
     seen = {}
 

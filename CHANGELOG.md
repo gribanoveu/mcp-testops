@@ -2,6 +2,15 @@
 
 Что сделано, по этапам из `docs/05-plan.md`: одна строка на этап, новое — сверху.
 
+## 2026-11-09 — M2. История прогонов кейса
+
+- Добавлен 30-й инструмент `get_test_case_history` (`GET /api/testcase/history`): по id кейса отдаёт
+  строки `{testResultId, launchId, launchName, status, start, stop, duration, message, testedBy}`;
+  `launch` из схемы (`IdAndNameOnlyDto`) разворачивается в поля строки.
+- Закрыт вопрос 13: сценарий M2 теперь выполним целиком — `search_test_cases` → `get_test_case` →
+  `get_test_case_steps` → `get_test_case_history` → `get_test_result`.
+- Набор: 24 инструмента (17 read + 7 write), в `TESTOPS_READ_ONLY=true` — 17. Тестов 60.
+
 ## 2026-11-09 — M2. Read-контур закрыт
 
 - `validate_aql` — проверка AQL до поиска: `{valid, count}`; пустой `rql` — ошибка без запроса.

@@ -13,6 +13,7 @@ READ_TOOLS = [
     "get_launch_statistic",
     "get_project",
     "get_test_case",
+    "get_test_case_history",
     "get_test_case_steps",
     "get_test_plan",
     "get_test_result",
