@@ -38,15 +38,44 @@ MCP-сервер (stdio) поверх API Allure TestOps: проекты, тес
   `totalElements`/`totalPages`/`number`.
 - Ошибки — данные: `{"ok": false, "error": "HTTP 404 on GET /api/testcase/1: …"}` вместо исключения.
 
-## Установка и запуск
+## Установка
+
+Два способа: готовый бинарник (Python не нужен) и пакет из Python.
+
+### 1. Бинарник из Releases
+
+Скачайте файл под свою систему из [Releases](https://github.com/gribanoveu/mcp-testops/releases),
+распакуйте и сделайте исполняемым (macOS/Linux):
+
+```bash
+chmod +x mcp-testops-<platform>
+./mcp-testops-<platform>          # без TESTOPS_TOKEN — exit 1 и понятное сообщение
+```
+
+| Система | Файл ассета |
+|---|---|
+| macOS Apple Silicon | `mcp-testops-darwin-arm64` |
+| macOS Intel | `mcp-testops-darwin-x64` |
+| Linux x86_64 | `mcp-testops-linux-x64` |
+| Linux arm64 | `mcp-testops-linux-arm64` |
+| Windows x86_64 | `mcp-testops-win32-x64.exe` |
+
+### 2. Пакет Python
+
+Нужен Python 3.10+. Колесо `py3-none-any` — одно на все платформы:
+
+```bash
+pip install https://github.com/gribanoveu/mcp-testops/releases/download/v0.1.1/mcp_testops-0.1.1-py3-none-any.whl
+python -m mcp_testops
+```
+
+Или из исходников (для разработки, с тестами и CLI-командами SDK):
 
 ```bash
 python -m venv .venv && . .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -e ".[test]" "mcp[cli]"             # mcp[cli] — команды mcp dev / mcp run / mcp version
+pip install -e ".[test]" "mcp[cli]"             # mcp[cli] — mcp dev / mcp run / mcp version
 python -m mcp_testops                          # stdio; без TESTOPS_TOKEN падает с понятным сообщением
 ```
-
-Требуется Python 3.10+.
 
 ## Настройка
 
@@ -62,18 +91,22 @@ python -m mcp_testops                          # stdio; без TESTOPS_TOKEN п�
 | `TESTOPS_READ_ONLY` | нет | `false` | `true` — регистрируются только read-инструменты (17 из 30) |
 | `MCP_SERVER_NAME` | нет | `testops` | имя сервера в клиенте |
 
-### Подключение клиента (пример)
+## Подключение в Cursor
 
-Форма блока `mcp` — как в вашем клиенте; ниже локальный сервер, который клиент запускает подпроцессом.
-Токен живёт только в локальном конфиге:
+Cursor читает MCP-серверы из `mcp.json`: глобально — `~/.cursor/mcp.json`, для одного проекта —
+`<репозиторий>/.cursor/mcp.json`. Сервер локальный, транспорт stdio: клиент сам запускает команду
+и общается с ней через stdin/stdout.
+
+### С бинарником
 
 ```json
 {
-  "mcp": {
+  "mcpServers": {
     "testops": {
-      "type": "local",
-      "command": ["python", "-m", "mcp_testops"],
-      "environment": {
+      "type": "stdio",
+      "command": "/absolute/path/to/mcp-testops-darwin-arm64",
+      "args": [],
+      "env": {
         "TESTOPS_BASE_URL": "https://testops.net",
         "TESTOPS_TOKEN": "****",
         "TESTOPS_PROJECT_ID": "65",
@@ -83,6 +116,38 @@ python -m mcp_testops                          # stdio; без TESTOPS_TOKEN п�
   }
 }
 ```
+
+### С пакетом Python
+
+```json
+{
+  "mcpServers": {
+    "testops": {
+      "type": "stdio",
+      "command": "/absolute/path/to/.venv/bin/python",
+      "args": ["-m", "mcp_testops"],
+      "env": {
+        "TESTOPS_BASE_URL": "https://testops.net",
+        "TESTOPS_TOKEN": "****",
+        "TESTOPS_PROJECT_ID": "65"
+      }
+    }
+  }
+}
+```
+
+- **Путь к команде — абсолютный.** Клиент запускает сервер из неожиданного рабочего каталога, относительный
+  путь или голое имя из виртуального окружения не найдётся.
+- **Токен — только в локальном файле.** Если `mcp.json` лежит в репозитории, пишите `"${env:TESTOPS_TOKEN}"`:
+  Cursor подставит переменную окружения, и секрет в git не попадёт. В этом README вместо него `****`.
+- **Окружение сервера — это ровно этот блок `env`.** Переменные вашей оболочки в процесс сервера
+  не попадают, поэтому `TESTOPS_BASE_URL` и `TESTOPS_PROJECT_ID` лучше указать явно.
+- **Проверка:** после сохранения файла перезагрузите конфиг MCP (Cursor: Customize → MCPs) и убедитесь,
+  что в списке 30 инструментов — тогда сервер ответил на `initialize`.
+
+Остальные клиенты, которые запускают локальную команду по stdio (Claude Desktop,
+`~/.config/...`-подобные), используют ту же пару `command`/`args` плюс свой `env`; в Claude Desktop это
+`claude_desktop_config.json` с тем же объектом `mcpServers`.
 
 ## Ограничения и риски
 
@@ -108,6 +173,15 @@ pytest -q                                        # 56 тестов; 12 конт�
 mcp version                                      # версия официального SDK
 mcp dev src/mcp_testops/__init__.py              # Inspector: что увидит модель
 python -m mcp_testops                            # stdio, читает TESTOPS_* из env
+```
+
+Собрать standalone-бинарник локально (то же, что делает релизный workflow):
+
+```bash
+pip install -e ".[build]"
+pyinstaller --onefile --name mcp-testops --distpath dist-bin --workpath build/pyi \
+  --collect-all mcp --collect-all pydantic --collect-all anyio \
+  --hidden-import mcp_testops packaging/entry.py
 ```
 
 Переснять снимок спеки перед этапом и посмотреть дифф:

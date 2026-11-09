@@ -1,0 +1,103 @@
+# Tag vX.Y.Z (matching pyproject.toml) → test, build a standalone binary per platform
+# and publish them with the wheel and the sdist in the GitHub Release.
+#
+# The five platforms mirror the other MCP server of this account: darwin-arm64,
+# darwin-x64, linux-x64, linux-arm64, win32-x64. The wheel is py3-none-any, so pip
+# users on any platform get one file; the binaries are for clients that expect a
+# command and nothing else (no Python on the machine).
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -e ".[test]"
+      - run: python -m pytest -q
+
+  wheels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip wheel . --no-deps -w artifacts
+      - run: python -m pip install --quiet build && python -m build --sdist --outdir artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels
+          path: artifacts/
+          if-no-files-found: error
+
+  binaries:
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { platform: darwin-arm64, os: macos-14 }
+          - { platform: darwin-x64, os: macos-13 }
+          - { platform: linux-x64, os: ubuntu-latest }
+          - { platform: linux-arm64, os: ubuntu-24.04-arm }
+          - { platform: win32-x64, os: windows-latest, exe: .exe }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -e ".[build]"
+      - name: Build the executable
+        run: >
+          pyinstaller --onefile --clean
+          --name mcp-testops-${{ matrix.platform }}
+          --distpath out --workpath work --specpath work
+          --collect-all mcp --collect-all pydantic --collect-all anyio
+          --hidden-import mcp_testops
+          packaging/entry.py
+      - name: Smoke - the binary answers like the module
+        shell: bash
+        run: |
+          set +e
+          output=$(./out/mcp-testops-${{ matrix.platform }}${{ matrix.exe }} 2>&1)
+          code=$?
+          echo "$output"
+          test "$code" -eq 1
+          test "$output" = "TESTOPS_TOKEN is not set"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bin-${{ matrix.platform }}
+          path: out/
+          if-no-files-found: error
+
+  publish:
+    needs: [test, wheels, binaries]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: The tag matches pyproject.toml
+        run: |
+          version=$(python -c "import tomllib,pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          test "v$version" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME != pyproject $version"; exit 1; }
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" artifacts/* --title "$GITHUB_REF_NAME" --generate-notes

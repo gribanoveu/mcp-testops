@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-testops"
-version = "0.1.0"
+version = "0.1.1"
 description = "MCP server for Allure TestOps"
 license = "MIT"
 license-files = ["LICENSE"]
@@ -16,6 +16,8 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest>=8", "jsonschema>=4"]
+# Only for the standalone binaries published in Releases (see packaging/).
+build = ["pyinstaller>=6"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mcp_testops"]

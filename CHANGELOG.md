@@ -2,6 +2,20 @@
 
 Что сделано, по этапам из `docs/05-plan.md`: одна строка на этап, новое — сверху.
 
+## 2026-11-09 — v0.1.1: сборки под все платформы
+
+- `.github/workflows/release.yml`: на тег `v*` — тесты, sdist и универсальное колесо, затем
+  бинарники под пять платформ (darwin-arm64/x64, linux-x64/arm64, win32-x64) через PyInstaller —
+  и всё это в GitHub Release. Тег сверяется с версией в `pyproject.toml`.
+- `.github/workflows/ci.yml`: `pytest` на ubuntu/macos/windows × Python 3.10 и 3.13.
+- `packaging/entry.py` — точка входа для бинарника (у `__main__.py` относительный импорт, как скрипт
+  он не запускается); экстра `build` с PyInstaller — только для сборки, не в рантайм.
+- Проверено локально на macOS arm64: бинарник 27 МБ, `initialize` по stdio, 30 инструментов,
+  без токена — `exit 1` с `TESTOPS_TOKEN is not set`.
+- README: установка двумя способами (бинарник или колесо) и раздел «Подключение в Cursor»
+  (`~/.cursor/mcp.json` / `<репозиторий>/.cursor/mcp.json`, `mcpServers`, `type: stdio`,
+  `command`/`args`/`env`, про `${env:TESTOPS_TOKEN}`).
+
 ## 2026-11-09 — Публикация
 
 - Лицензия MIT (`LICENSE`), в `pyproject.toml` — `license = "MIT"` и `license-files`.
