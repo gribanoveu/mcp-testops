@@ -7,8 +7,10 @@
 - Публикация релиза стала повторяемой: `gh release view || gh release create` и
   `gh release upload --clobber`. Раньше повторный прогон падал на «релиз уже есть» и блокировал
   job `npm` из-за `needs: [publish]`.
-- Версия 0.1.5 в `pyproject.toml`, `npm/package.json` и ссылке на колесо в README; секрет `NPM_TOKEN`
-  добавлен в репозиторий, job `npm` публикует `@gribanoveu/mcp-testops` в registry.npmjs.org.
+- npm отвечает `403`: stage-only токен не может публиковать напрямую. Workflow переведён на
+  staged-публикацию: `npm stage publish` (без 2FA) + одобрение мейнтейнером (`npm stage approve`).
+  Команда `stage` есть только в npm 12, поэтому job ставит `npm@12` поверх node 24.
+- Версия 0.1.5 в `pyproject.toml`, `npm/package.json` и ссылке на колесо в README.
 
 ## 2026-11-09 — v0.1.4: запуск без установки работает
 

@@ -58,6 +58,10 @@ MCP не ломается.
 > Две последние команды заработают после первой публикации: PyPI — создать проект `mcp-testops` и trusted
 > publisher для `.github/workflows/publish-pypi.yml` (job `publish` там с `continue-on-error`: пока PyPI
 > не настроен, он падает, не валяя релиз), npm — секрет `NPM_TOKEN` в настройках репозитория.
+>
+> Публикация в npm двухшаговая: workflow только **ставит версию в очередь** (`npm stage publish`, токену
+> 2FA не нужна), а мейнтейнер с 2FA одобряет её — в CLI (`npm stage list`, затем
+> `npm stage approve <stage-id>`) или на npmjs.com. До одобрения версия не видна в registry.
 
 ### 2. Бинарник из Releases
 

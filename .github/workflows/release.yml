@@ -122,17 +122,31 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           registry-url: https://registry.npmjs.org
+      - name: npm with staged publishing
+        # `npm stage` lives in npm 12; node 24 images ship npm 11.
+        run: npm install -g npm@12
       - name: The npm version matches the tag
         run: |
           node -e "const p=require('./npm/package.json'); const v=process.env.GITHUB_REF_NAME.slice(1); if(p.version!==v){console.error('npm/package.json',p.version,'!= tag',v);process.exit(1)}"
-      - name: Publish to npm
+      - name: Stage the package
+        # A stage-only token cannot publish directly (that is what npm answered: "Two-factor
+        # authentication or granular access token with bypass 2fa enabled is required").
+        # Staging defers 2FA to a maintainer: npm stage list -> npm stage approve <stage-id>.
         if: env.NODE_AUTH_TOKEN != ''
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         working-directory: npm
-        run: npm publish --access public
+        run: npm stage publish --access public
+      - name: How to release the staged version
+        if: env.NODE_AUTH_TOKEN != ''
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          echo "A maintainer approves the staged version (needs 2FA):"
+          npm stage list @gribanoveu/mcp-testops
+          echo "npm stage approve <stage-id>"
       - name: Publish skipped
         if: env.NODE_AUTH_TOKEN == ''
         env:
