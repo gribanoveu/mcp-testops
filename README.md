@@ -40,30 +40,34 @@ MCP-сервер (stdio) поверх API Allure TestOps: проекты, тес
 
 ## Установка
 
-Три способа: запуск одной командой (без установки), готовый бинарник и пакет Python.
+Четыре пути: npm (без установки или глобально), uv, готовый бинарник, пакет Python.
 
-### 1. Одной командой
+### 1. Через npm
+
+Пакет опубликован: [`@gribanoveu/mcp-testops`](https://www.npmjs.com/package/@gribanoveu/mcp-testops). Нужен
+Node 18+, Python не нужен: при первом запуске обёртка скачивает бинарник своей платформы (22–40 МБ) из
+этого же Release в `~/.cache/mcp-testops/` и дальше запускает его оттуда.
 
 ```bash
-npx -y @gribanoveu/mcp-testops                                        # Node 18+, работает сейчас
-uvx --from git+https://github.com/gribanoveu/mcp-testops mcp-testops   # uv, работает сейчас
-uvx mcp-testops                                                       # после настройки PyPI
+npx -y @gribanoveu/mcp-testops          # без установки: скачает, запустит и закеширует
+npm install -g @gribanoveu/mcp-testops  # глобально: в PATH появляется команда mcp-testops
+mcp-testops                             # то же самое, без npx на каждый запуск
+npx -y @gribanoveu/mcp-testops@0.1.5    # закрепить версию — тем же способом обновляются
 ```
 
-Обёртка `npx` скачивает бинарник своей платформы из этого же Release в `~/.cache/mcp-testops/` и
-запускает его; stdout у неё чистый, всё служебное идёт в stderr — протокол MCP не ломается.
-`uvx --from git+…` собирает пакет прямо из репозитория и запускает: нужен только
-[uv](https://docs.astral.sh/uv/).
+Всё служебное обёртка пишет в stderr (в том числе строку о загрузке бинарника при первом запуске),
+stdout остаётся протоколу MCP.
 
-> Короткая форма `uvx mcp-testops` ждёт проекта на PyPI: создать `mcp-testops` и trusted publisher для
-> `.github/workflows/publish-pypi.yml` (job `publish` там с `continue-on-error`: пока PyPI не настроен,
-> он падает, не валяя релиз).
->
-> Публикация в npm двухшаговая: workflow только **ставит версию в очередь** (`npm stage publish`, токену
-> 2FA не нужна), а мейнтейнер с 2FA одобряет её — в CLI (`npm stage list`, затем
-> `npm stage approve <stage-id>`) или на npmjs.com. До одобрения версия не видна в registry.
+### 2. Через uv
 
-### 2. Бинарник из Releases
+```bash
+uvx --from git+https://github.com/gribanoveu/mcp-testops mcp-testops   # из репозитория, работает сейчас
+uvx mcp-testops                                                       # после публикации в PyPI
+```
+
+`uvx` собирает пакет в кеш и запускает; нужен только [uv](https://docs.astral.sh/uv/).
+
+### 3. Бинарник из Releases
 
 Скачайте файл под свою систему из [Releases](https://github.com/gribanoveu/mcp-testops/releases),
 распакуйте и сделайте исполняемым (macOS/Linux):
@@ -81,9 +85,9 @@ chmod +x mcp-testops-<platform>
 | Windows x86_64 | `mcp-testops-win32-x64.exe` |
 
 Для Intel Mac готового бинарника нет: сборка под x64 на раннере GitHub падает на несовпадении OpenSSL
-в `cryptography`. На Intel Mac ставьте колесо (пункт 3) или используйте `uvx mcp-testops`.
+в `cryptography`. На Intel Mac ставьте колесо (пункт 4) или используйте `uvx mcp-testops`.
 
-### 2. Пакет Python
+### 4. Пакет Python
 
 Нужен Python 3.10+. Колесо `py3-none-any` — одно на все платформы:
 
@@ -99,6 +103,11 @@ python -m venv .venv && . .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ".[test]" "mcp[cli]"             # mcp[cli] — mcp dev / mcp run / mcp version
 python -m mcp_testops                          # stdio; без TESTOPS_TOKEN падает с понятным сообщением
 ```
+
+> Что уже опубликовано: npm — 0.1.5, в registry.npmjs.org. PyPI пока нет, поэтому `uvx mcp-testops` без
+> `--from` ещё не работает: нужен проект `mcp-testops` и trusted publisher для
+> `.github/workflows/publish-pypi.yml`. Публикация в npm двухшаговая: workflow ставит версию в очередь
+> (`npm stage publish`), мейнтейнер с 2FA одобряет её (`npm stage approve <stage-id>`).
 
 ## Настройка
 
@@ -193,7 +202,8 @@ Cursor читает MCP-серверы из `mcp.json`: глобально — `
 ```
 
 Первый запуск скачивает бинарник вашей платформы (~22–40 МБ) в `~/.cache/mcp-testops/`, следующие идут
-из кеша. Без Node есть вариант с `uv`: `"command": "uvx"`,
+из кеша. Если пакет поставлен глобально (`npm i -g @gribanoveu/mcp-testops`), то в конфиге хватит
+`"command": "mcp-testops"` без `args`. Без Node есть вариант с `uv`: `"command": "uvx"`,
 `"args": ["--from", "git+https://github.com/gribanoveu/mcp-testops", "mcp-testops"]`, а когда пакет
 будет на PyPI — просто `"args": ["mcp-testops"]`.
 
