@@ -13,7 +13,10 @@ from jsonschema import Draft202012Validator
 import mcp_testops as testops
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-with open(ROOT / "openapi" / "api-docs.json", encoding="utf-8") as fh:
+SNAPSHOT = ROOT / "openapi" / "api-docs.json"
+if not SNAPSHOT.is_file():
+    pytest.skip("openapi/api-docs.json is not in this checkout: contract tests need the snapshot", allow_module_level=True)
+with open(SNAPSHOT, encoding="utf-8") as fh:
     SPEC = json.load(fh)
 
 
