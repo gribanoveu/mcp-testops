@@ -2,6 +2,14 @@
 
 Что сделано, по этапам из `docs/05-plan.md`: одна строка на этап, новое — сверху.
 
+## 2026-11-09 — v0.1.5: публикация в npm
+
+- Публикация релиза стала повторяемой: `gh release view || gh release create` и
+  `gh release upload --clobber`. Раньше повторный прогон падал на «релиз уже есть» и блокировал
+  job `npm` из-за `needs: [publish]`.
+- Версия 0.1.5 в `pyproject.toml`, `npm/package.json` и ссылке на колесо в README; секрет `NPM_TOKEN`
+  добавлен в репозиторий, job `npm` публикует `@gribanoveu/mcp-testops` в registry.npmjs.org.
+
 ## 2026-11-09 — v0.1.4: запуск без установки работает
 
 - У пакета появился console script `mcp-testops = mcp_testops:main`: без него `uvx` отказывался

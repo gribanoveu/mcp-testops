@@ -84,7 +84,7 @@ chmod +x mcp-testops-<platform>
 Нужен Python 3.10+. Колесо `py3-none-any` — одно на все платформы:
 
 ```bash
-pip install https://github.com/gribanoveu/mcp-testops/releases/download/v0.1.4/mcp_testops-0.1.4-py3-none-any.whl
+pip install https://github.com/gribanoveu/mcp-testops/releases/download/v0.1.5/mcp_testops-0.1.5-py3-none-any.whl
 python -m mcp_testops
 ```
 

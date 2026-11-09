@@ -104,7 +104,11 @@ jobs:
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" artifacts/* --title "$GITHUB_REF_NAME" --generate-notes
+        # Re-running the workflow must be safe: upload over an existing release instead of
+        # failing on "release already exists" and blocking the npm job.
+        run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
+          gh release upload "$GITHUB_REF_NAME" artifacts/* --clobber
 
   npm:
     # `npx -y @gribanoveu/mcp-testops` needs the release assets, so this runs after them.
