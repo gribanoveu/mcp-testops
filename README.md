@@ -65,7 +65,7 @@ chmod +x mcp-testops-<platform>
 Нужен Python 3.10+. Колесо `py3-none-any` — одно на все платформы:
 
 ```bash
-pip install https://github.com/gribanoveu/mcp-testops/releases/download/v0.1.1/mcp_testops-0.1.1-py3-none-any.whl
+pip install https://github.com/gribanoveu/mcp-testops/releases/download/v0.1.2/mcp_testops-0.1.2-py3-none-any.whl
 python -m mcp_testops
 ```
 
@@ -180,7 +180,7 @@ python -m mcp_testops                            # stdio, читает TESTOPS_*
 ```bash
 pip install -e ".[build]"
 pyinstaller --onefile --name mcp-testops --distpath dist-bin --workpath build/pyi \
-  --collect-all mcp --collect-all pydantic --collect-all anyio \
+  --collect-submodules mcp.server --collect-all pydantic --collect-all anyio \
   --hidden-import mcp_testops packaging/entry.py
 ```
 
@@ -193,6 +193,13 @@ scripts/refresh_spec.sh          # curl /api-docs/ в openapi/api-docs.json.new 
 Скрипт не перезаписывает `openapi/api-docs.json`: сначала читаются версия и дифф, потом снимок меняется
 и гоняются `pytest -q`. Полного снимка в репозитории нет — его получают этим скриптом со своего стенда;
 пока снимка нет, `tests/test_contract.py` помечается skipped, остальные 56 тестов работают.
+
+## Скилл для агента
+
+В `skills/testops-mcp/SKILL.md` — инструкция для модели: карта из 30 инструментов, готовые цепочки
+(найти кейс → шаги → прогон → результаты), формы JSON-аргументов, чего инструменты не умеют и что
+делать, если ответ не тот. Положите каталог `skills/testops-mcp/` в папку скиллов клиента (Kibo,
+Claude Code) — он подхватит его по описанию из frontmatter.
 
 ## Структура
 
@@ -211,6 +218,8 @@ testops-mcp/
 ├── scripts/refresh_spec.sh  # получить снимок спеки с вашего стенда
 ├── openapi/              # выборки из спеки: api-inventory.md, key-schemas.json
 ├── docs/                 # аналитика API и план, по которым писался сервер (01–06)
+├── packaging/entry.py     # точка входа для standalone-бинарника
+├── skills/testops-mcp/    # SKILL.md — как пользоваться сервером агенту
 ├── AGENTS.md             # правила работы над сервером
 ├── CHANGELOG.md          # что сделано, по этапам
 ├── LICENSE               # MIT

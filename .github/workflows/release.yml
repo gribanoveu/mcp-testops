@@ -43,11 +43,12 @@ jobs:
 
   binaries:
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         include:
-          - { platform: darwin-arm64, os: macos-14 }
-          - { platform: darwin-x64, os: macos-13 }
+          # macOS 13 is retired; macos-latest is macOS 26 arm64, macos-26-intel is x64.
+          - { platform: darwin-arm64, os: macos-latest }
+          - { platform: darwin-x64, os: macos-26-intel }
           - { platform: linux-x64, os: ubuntu-latest }
           - { platform: linux-arm64, os: ubuntu-24.04-arm }
           - { platform: win32-x64, os: windows-latest, exe: .exe }
@@ -63,7 +64,7 @@ jobs:
           pyinstaller --onefile --clean
           --name mcp-testops-${{ matrix.platform }}
           --distpath out --workpath work --specpath work
-          --collect-all mcp --collect-all pydantic --collect-all anyio
+          --collect-submodules mcp.server --collect-all pydantic --collect-all anyio
           --hidden-import mcp_testops
           packaging/entry.py
       - name: Smoke - the binary answers like the module
