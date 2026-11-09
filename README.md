@@ -45,19 +45,19 @@ MCP-сервер (stdio) поверх API Allure TestOps: проекты, тес
 ### 1. Одной командой
 
 ```bash
-uvx --from git+https://github.com/gribanoveu/mcp-testops mcp-testops   # работает сейчас
-uvx mcp-testops                                                      # после публикации в PyPI
-npx -y @gribanoveu/mcp-testops                                       # после публикации в npm
+npx -y @gribanoveu/mcp-testops                                        # Node 18+, работает сейчас
+uvx --from git+https://github.com/gribanoveu/mcp-testops mcp-testops   # uv, работает сейчас
+uvx mcp-testops                                                       # после настройки PyPI
 ```
 
-Первый вариант не требует ничего, кроме [uv](https://docs.astral.sh/uv/): `uvx` собирает пакет прямо из
-репозитория в кеш и запускает. `npx`-обёртка скачивает бинарник своей платформы из этого же Release
-в `~/.cache/mcp-testops/` и запускает его; stdout у неё чистый, всё служебное идёт в stderr — протокол
-MCP не ломается.
+Обёртка `npx` скачивает бинарник своей платформы из этого же Release в `~/.cache/mcp-testops/` и
+запускает его; stdout у неё чистый, всё служебное идёт в stderr — протокол MCP не ломается.
+`uvx --from git+…` собирает пакет прямо из репозитория и запускает: нужен только
+[uv](https://docs.astral.sh/uv/).
 
-> Две последние команды заработают после первой публикации: PyPI — создать проект `mcp-testops` и trusted
-> publisher для `.github/workflows/publish-pypi.yml` (job `publish` там с `continue-on-error`: пока PyPI
-> не настроен, он падает, не валяя релиз), npm — секрет `NPM_TOKEN` в настройках репозитория.
+> Короткая форма `uvx mcp-testops` ждёт проекта на PyPI: создать `mcp-testops` и trusted publisher для
+> `.github/workflows/publish-pypi.yml` (job `publish` там с `continue-on-error`: пока PyPI не настроен,
+> он падает, не валяя релиз).
 >
 > Публикация в npm двухшаговая: workflow только **ставит версию в очередь** (`npm stage publish`, токену
 > 2FA не нужна), а мейнтейнер с 2FA одобряет её — в CLI (`npm stage list`, затем
@@ -174,16 +174,15 @@ Cursor читает MCP-серверы из `mcp.json`: глобально — `
 
 ### Запуск без установки
 
-Если не хочется держать файл и путь к нему, клиенту можно отдать команду, которая всё делает сама.
-Сегодня работает этот вариант — `uvx` соберёт пакет из репозитория и запустит:
+Если не хочется держать файл и путь к нему, клиенту можно отдать команду, которая всё делает сама:
 
 ```json
 {
   "mcpServers": {
     "testops": {
       "type": "stdio",
-      "command": "uvx",
-      "args": ["--from", "git+https://github.com/gribanoveu/mcp-testops", "mcp-testops"],
+      "command": "npx",
+      "args": ["-y", "@gribanoveu/mcp-testops"],
       "env": {
         "TESTOPS_BASE_URL": "https://testops.net",
         "TESTOPS_TOKEN": "****"
@@ -193,8 +192,10 @@ Cursor читает MCP-серверы из `mcp.json`: глобально — `
 }
 ```
 
-После публикации в PyPI те же `command`/`args` сокращаются до `"uvx"` / `["mcp-testops"]`, а после
-публикации обёртки в npm — до `"npx"` / `["-y", "@gribanoveu/mcp-testops"]`.
+Первый запуск скачивает бинарник вашей платформы (~22–40 МБ) в `~/.cache/mcp-testops/`, следующие идут
+из кеша. Без Node есть вариант с `uv`: `"command": "uvx"`,
+`"args": ["--from", "git+https://github.com/gribanoveu/mcp-testops", "mcp-testops"]`, а когда пакет
+будет на PyPI — просто `"args": ["mcp-testops"]`.
 
 ## Ограничения и риски
 
