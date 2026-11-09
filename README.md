@@ -166,9 +166,31 @@ Cursor читает MCP-серверы из `mcp.json`: глобально — `
 
 Остальные клиенты, которые запускают локальную команду по stdio (Claude Desktop,
 `~/.config/...`-подобные), используют ту же пару `command`/`args` плюс свой `env`; в Claude Desktop это
-`claude_desktop_config.json` с тем же объектом `mcpServers`. Если ставите одной командой, то вместо пути
-к бинарнику в `command`/`args` пишется `"uvx"` / `["mcp-testops"]` или `"npx"` /
-`["-y", "@gribanoveu/mcp-testops"]`.
+`claude_desktop_config.json` с тем же объектом `mcpServers`.
+
+### Запуск без установки
+
+Если не хочется держать файл и путь к нему, клиенту можно отдать команду, которая всё делает сама.
+Сегодня работает этот вариант — `uvx` соберёт пакет из репозитория и запустит:
+
+```json
+{
+  "mcpServers": {
+    "testops": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/gribanoveu/mcp-testops", "mcp-testops"],
+      "env": {
+        "TESTOPS_BASE_URL": "https://testops.net",
+        "TESTOPS_TOKEN": "****"
+      }
+    }
+  }
+}
+```
+
+После публикации в PyPI те же `command`/`args` сокращаются до `"uvx"` / `["mcp-testops"]`, а после
+публикации обёртки в npm — до `"npx"` / `["-y", "@gribanoveu/mcp-testops"]`.
 
 ## Ограничения и риски
 
