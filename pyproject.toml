@@ -17,3 +17,8 @@ test = ["pytest>=8", "jsonschema>=4"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mcp_testops"]
+
+[tool.pytest.ini_options]
+# The package has modules like tools/cases.py; without this, pytest would hunt for
+# tests inside src/ and collect imports such as TestOpsError as a test class.
+testpaths = ["tests"]

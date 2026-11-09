@@ -2,6 +2,20 @@
 
 Что сделано, по этапам из `docs/05-plan.md`: одна строка на этап, новое — сверху.
 
+## 2026-11-09 — Структура: один файл разбит на пакет
+
+- `src/mcp_testops/__init__.py` вырос до ~1200 строк на 30 инструментах, и найти в нём нужное стало дороже,
+  чем пролистать пакет. Теперь: `config` (env и константы), `client` (httpx, ретраи, `_api`/`_paged`),
+  `helpers` (guard, разбор аргументов, компактность), `bodies` (тела запросов), `server` (`MCPServer` и
+  `_write`), `tools/{projects,cases,plans,launches,references}` — по модулю на домен.
+- `__init__` остался тонким: импортирует модули (регистрация инструментов) и держит `main()`; старые имена
+  (`_api`, `_paged`, `_test_case_body`, `mcp`) ре-экспортируются, чтобы тесты и клиенты не ломались.
+- `tools/cases.py` и `tools/plans.py` названы без `test_`: иначе pytest собирал бы их как тесты и
+  жаловался на `TestOpsError`. Сборка ограничена `testpaths = ["tests"]` в `pyproject.toml`.
+- Тесты гоняют модуль-владелец (`mcp_testops.client._client`, `.RETRY_BACKOFF`), а фикстура `fresh`
+  перезагружает пакет в порядке зависимостей: config → client → helpers → bodies → server → tools → пакет.
+- Проверено: 66 тестов, 30 инструментов по stdio, 17 в read-only, без токена — тот же понятный exit 1.
+
 ## 2026-11-09 — M3. Write-контур
 
 - `delete_test_case(force)` (`DELETE` + `202`), `update_test_plan` (тело `TestPlanPatchDto`, `clear` как в

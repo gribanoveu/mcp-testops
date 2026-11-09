@@ -38,8 +38,19 @@ testops-mcp/
 │   ├── test_client.py        # httpx.MockTransport: пагинация, oneOf, 202/204, ошибки
 │   └── test_tool_guards.py   # project_id, TESTOPS_READ_ONLY, отсутствие generic-инструмента
 └── src/mcp_testops/
-    ├── __init__.py           # сервер SDK + инструменты, по функции на инструмент
-    └── __main__.py           # from . import main; main()
+    ├── __init__.py           # импорт модулей инструментов (регистрация) + main()
+    ├── __main__.py           # from . import main; main()
+    ├── config.py             # TESTOPS_* из env, размеры страниц, ретраи, enum'ы
+    ├── client.py             # TestOpsError, httpx-клиент, _send/_api/_paged
+    ├── helpers.py            # _guard, _pid, _json_arg, _ids, _answer, _pick, _statistic
+    ├── bodies.py             # тела запросов — чистые функции для контрактных тестов
+    ├── server.py             # mcp = MCPServer(...) и _write (read-only)
+    └── tools/                # по модулю на домен, одна функция = один инструмент
+        ├── projects.py
+        ├── cases.py
+        ├── plans.py
+        ├── launches.py
+        └── references.py
 ```
 
 Коммиты — в тот репозиторий, где лежит эта папка, по одной теме на коммит.

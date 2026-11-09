@@ -137,7 +137,7 @@ def test_non_json_success_is_an_error(api):
 
 
 def test_get_retries_server_error(api, monkeypatch):
-    monkeypatch.setattr(testops, "RETRY_BACKOFF", 0)
+    monkeypatch.setattr(testops.client, "RETRY_BACKOFF", 0)
     calls = []
 
     def handler(request):
@@ -153,7 +153,7 @@ def test_get_retries_server_error(api, monkeypatch):
 
 
 def test_post_is_not_retried(api, monkeypatch):
-    monkeypatch.setattr(testops, "RETRY_BACKOFF", 0)
+    monkeypatch.setattr(testops.client, "RETRY_BACKOFF", 0)
     calls = []
 
     def handler(request):
@@ -391,9 +391,9 @@ def test_search_escapes_quotes_in_name(api):
 
 
 def test_http_builds_one_configured_client(monkeypatch):
-    monkeypatch.setattr(testops, "_client", None)
-    monkeypatch.setattr(testops, "BASE_URL", "https://stand.local")
-    monkeypatch.setattr(testops, "TIMEOUT", 12.0)
+    monkeypatch.setattr(testops.client, "_client", None)
+    monkeypatch.setattr(testops.client, "BASE_URL", "https://stand.local")
+    monkeypatch.setattr(testops.client, "TIMEOUT", 12.0)
     first = testops._http()
     second = testops._http()
     assert first is second
@@ -473,7 +473,7 @@ def test_transport_error_becomes_data(api):
 
 
 def test_get_gives_up_after_three_attempts(api, monkeypatch):
-    monkeypatch.setattr(testops, "RETRY_BACKOFF", 0)
+    monkeypatch.setattr(testops.client, "RETRY_BACKOFF", 0)
     calls = []
 
     def handler(request):
