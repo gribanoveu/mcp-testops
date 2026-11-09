@@ -46,9 +46,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # macOS 13 is retired; macos-latest is macOS 26 arm64, macos-26-intel is x64.
+          # macOS 13 is retired. macos-latest is arm64; macos-15-intel is the standard
+          # Intel label (macos-26-intel is not available to every account).
           - { platform: darwin-arm64, os: macos-latest }
-          - { platform: darwin-x64, os: macos-26-intel }
+          - { platform: darwin-x64, os: macos-15-intel }
           - { platform: linux-x64, os: ubuntu-latest }
           - { platform: linux-arm64, os: ubuntu-24.04-arm }
           - { platform: win32-x64, os: windows-latest, exe: .exe }
@@ -84,7 +85,9 @@ jobs:
 
   publish:
     needs: [test, wheels, binaries]
-    if: startsWith(github.ref, 'refs/tags/v')
+    # One platform can fail and still leave the rest downloadable: the run stays red,
+    # but the release is not lost because of a single runner problem.
+    if: always() && needs.test.result == 'success' && needs.wheels.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
