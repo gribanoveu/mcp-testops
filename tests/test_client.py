@@ -209,3 +209,211 @@ def test_search_without_query_is_an_error(api):
     api(lambda request: pytest.fail("no request expected"))
     answer = json.loads(testops.search_test_cases(project_id=65))
     assert answer == {"ok": False, "error": "rql or name is required"}
+
+
+def test_search_escapes_quotes_in_name(api):
+    seen = {}
+
+    def handler(request):
+        seen["rql"] = request.url.params["rql"]
+        return httpx.Response(200, json={"content": [], "totalElements": 0, "totalPages": 0, "number": 0, "size": 50})
+
+    api(handler)
+    testops.search_test_cases(project_id=65, name='a" or 1=1')
+    assert seen["rql"] == 'name ~ "a\\" or 1=1"'
+
+
+def test_http_builds_one_configured_client(monkeypatch):
+    monkeypatch.setattr(testops, "_client", None)
+    monkeypatch.setattr(testops, "BASE_URL", "https://stand.local")
+    monkeypatch.setattr(testops, "TIMEOUT", 12.0)
+    first = testops._http()
+    second = testops._http()
+    assert first is second
+    assert str(first.base_url).rstrip("/") == "https://stand.local"
+    assert first.headers["Authorization"].startswith("Api-Token")
+    assert first.timeout.connect == 12.0
+
+
+def test_create_test_case_sends_exact_body(api):
+    seen = {}
+
+    def handler(request):
+        seen["method"] = request.method
+        seen["path"] = request.url.path
+        seen["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"id": 42, "name": "Case", "projectId": 65, "hash": "x"})
+
+    api(handler)
+    answer = json.loads(
+        testops.create_test_case(
+            name="Case", project_id=65, status_id=5, tags_json='[{"id": 3, "name": "smoke"}]'
+        )
+    )
+    assert answer == {"ok": True, "id": 42, "name": "Case", "projectId": 65}
+    assert seen["method"] == "POST"
+    assert seen["path"] == "/api/testcase"
+    assert seen["body"] == {
+        "projectId": 65,
+        "name": "Case",
+        "statusId": 5,
+        "tags": [{"id": 3, "name": "smoke"}],
+    }
+
+
+def test_run_test_cases_sends_leafs_include(api):
+    seen = {}
+
+    def handler(request):
+        seen["path"] = request.url.path
+        seen["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"id": 77, "name": "Regress", "projectId": 65})
+
+    api(handler)
+    answer = json.loads(testops.run_test_cases(launch_name="Regress", project_id=65, ids="1001,1002"))
+    assert answer == {"ok": True, "launchId": 77, "name": "Regress", "projectId": 65}
+    assert seen["path"] == "/api/testcase/bulk/run/new"
+    assert seen["body"] == {
+        "launchName": "Regress",
+        "selection": {"projectId": 65, "leafsInclude": [1001, 1002]},
+    }
+
+
+def test_202_with_body_keeps_the_payload(api):
+    api(lambda request: httpx.Response(202, json={"id": 77, "name": "Regress"}))
+    answer = json.loads(testops.run_test_cases(launch_name="Regress", project_id=65, ids="1"))
+    assert answer == {"ok": True, "accepted": True, "launchId": 77, "name": "Regress"}
+
+
+def test_add_test_case_step_returns_created_id(api):
+    api(
+        lambda request: httpx.Response(
+            200, json={"createdStepId": 9, "scenario": {"scenarioSteps": {"1": {}, "2": {}}}}
+        )
+    )
+    answer = json.loads(testops.add_test_case_step(test_case_id=42, body="Open the form"))
+    assert answer == {"ok": True, "createdStepId": 9, "steps_count": 2}
+
+
+def test_transport_error_becomes_data(api):
+    def handler(request):
+        raise httpx.ConnectError("connection refused", request=request)
+
+    api(handler)
+    answer = json.loads(testops.get_project(65))
+    assert answer["ok"] is False
+    assert "ConnectError" in answer["error"]
+
+
+def test_get_gives_up_after_three_attempts(api, monkeypatch):
+    monkeypatch.setattr(testops, "RETRY_BACKOFF", 0)
+    calls = []
+
+    def handler(request):
+        calls.append(request.url.path)
+        return httpx.Response(503, json={"message": "maintenance"})
+
+    api(handler)
+    answer = json.loads(testops.get_project(65))
+    assert answer == {"ok": False, "error": "HTTP 503 on GET /api/project/65: maintenance"}
+    assert calls == ["/api/project/65"] * 3
+
+
+def test_paged_rejects_non_envelope(api):
+    api(lambda request: httpx.Response(200, json=[{"id": 1}]))
+    answer = json.loads(testops.list_test_cases(project_id=65))
+    assert answer["ok"] is False
+    assert "unexpected paged response" in answer["error"]
+
+
+def test_get_test_case_returns_whitelist_and_flag(api):
+    api(
+        lambda request: httpx.Response(
+            200,
+            json={
+                "id": 42,
+                "name": "Case",
+                "description": "text",
+                "descriptionHtml": "<p>text</p>",
+                "preconditionHtml": "<p>pre</p>",
+                "hash": "abc",
+                "editable": True,
+            },
+        )
+    )
+    answer = json.loads(testops.get_test_case(42))
+    assert answer == {"ok": True, "id": 42, "name": "Case", "description": "text", "steps_not_included": True}
+
+
+def test_statistic_dict_form_keeps_its_keys(api):
+    page = {
+        "content": [
+            {
+                "id": 3,
+                "name": "Launch",
+                "projectId": 65,
+                "closed": False,
+                "statistic": {"passed": 3, "inProgress": 1, "total": 4},
+            }
+        ],
+        "totalElements": 1,
+        "totalPages": 1,
+        "number": 0,
+        "size": 50,
+    }
+    api(lambda request: httpx.Response(200, json=page))
+    answer = json.loads(testops.list_launches(project_id=65))
+    assert answer["content"][0]["statistic"] == {"passed": 3, "inProgress": 1, "total": 4}
+
+
+def test_list_projects_sends_search_and_sort(api):
+    seen = {}
+
+    def handler(request):
+        seen["query"] = dict(request.url.params)
+        return httpx.Response(200, json={"content": [], "totalElements": 0, "totalPages": 0, "number": 0, "size": 50})
+
+    api(handler)
+    testops.list_projects(search="ops", favorite=True)
+    assert seen["query"]["search"] == "ops"
+    assert seen["query"]["favorite"] == "true"
+    assert seen["query"]["sort"] == "name,ASC"
+
+
+def test_get_test_plan_keeps_selection(api):
+    plan = {
+        "id": 3,
+        "name": "Plan",
+        "projectId": 65,
+        "baseRql": 'tag.name = "smoke"',
+        "testCasesCount": 7,
+        "treeSelection": {"leafsInclude": [1]},
+    }
+    api(lambda request: httpx.Response(200, json=plan))
+    assert json.loads(testops.get_test_plan(3)) == {"ok": True, **plan}
+
+
+@pytest.mark.parametrize(
+    "call, path",
+    [
+        (lambda: testops.list_projects(), "/api/project"),
+        (lambda: testops.list_test_plans(project_id=65), "/api/testplan"),
+        (lambda: testops.list_test_results(launch_id=4), "/api/testresult"),
+        (lambda: testops.list_launches(project_id=65), "/api/launch"),
+    ],
+    ids=["projects", "test_plans", "test_results", "launches"],
+)
+def test_list_tools_hit_their_endpoint(api, call, path):
+    seen = {}
+
+    def handler(request):
+        seen["path"] = request.url.path
+        return httpx.Response(200, json={"content": [], "totalElements": 0, "totalPages": 0, "number": 0, "size": 50})
+
+    api(handler)
+    answer = json.loads(call())
+    assert seen["path"] == path
+    assert answer["ok"] is True
+    assert answer["content"] == []
+    assert answer["totalElements"] == 0 and answer["totalPages"] == 0 and answer["number"] == 0
+

@@ -7,8 +7,10 @@ from ``TESTOPS_*`` environment variables (see README).
 import functools
 import json
 import os
+import posixpath
 import time
 from typing import Any
+from urllib.parse import unquote
 
 import httpx
 from mcp.server import MCPServer
@@ -37,10 +39,13 @@ TEST_STATUSES = ("failed", "broken", "passed", "skipped", "unknown", "in_progres
 ALLOWED_METHODS = ("DELETE", "GET", "PATCH", "POST", "PUT")
 FORBIDDEN_PREFIXES = (
     "/api/account",
-    "/api/mfa",
+    "/api/register",  # account creation; /api/registration does not exist in the snapshot
     "/api/admin",
-    "/api/registration",
+    "/api/mfa",
+    "/api/globalsettings/mfa",  # MFA settings live outside /api/mfa
+    "/api/email-verification",
     "/api/invite",
+    "/api/login/invite-personal",
     "/api/integration",
     "/api/token",
 )
@@ -129,8 +134,17 @@ def _send(method: str, path: str, params: dict | None = None, body: Any = None) 
 def _api(method: str, path: str, params: dict | None = None, body: Any = None) -> Any:
     query = {k: v for k, v in (params or {}).items() if v is not None}
     resp = _send(method, path, query, body)
-    if resp.status_code in (202, 204):
+    if resp.status_code == 204:
         return {"ok": True, "accepted": True}
+    if resp.status_code == 202:
+        data: Any = None
+        if resp.content.strip():
+            try:
+                data = resp.json()
+            except ValueError:
+                data = None
+        payload = data if isinstance(data, dict) else {}
+        return {**payload, "ok": True, "accepted": True}
     if not resp.is_success:
         raise TestOpsError(_error_text(resp))
     if not resp.content.strip():
@@ -174,6 +188,26 @@ def _pid(project_id: int | None) -> int:
         raise TestOpsError(f"project_id must be an integer, got {raw!r}")
 
 
+def _aql_text(value: str) -> str:
+    """Escape a value for an AQL string literal; the syntax itself is unverified."""
+    return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def _normalized_path(path: str) -> str:
+    """Look at the path the way the server will: decoded, dot segments resolved.
+
+    ``/api/testcase/../api/account/1`` and ``/api/%61ccount`` must not slip past the
+    deny list of api_request, which would otherwise compare prefixes on raw text.
+    """
+    decoded = path
+    for _ in range(3):
+        unquoted = unquote(decoded)
+        if unquoted == decoded:
+            break
+        decoded = unquoted
+    return posixpath.normpath(decoded) if decoded.startswith("/") else decoded
+
+
 def _json_arg(value: str | None, name: str) -> Any:
     if value is None or value == "":
         return None
@@ -200,6 +234,14 @@ def _drop_none(payload: dict) -> dict:
     return {k: v for k, v in payload.items() if v is not None}
 
 
+def _answer(data: dict, **fields: Any) -> dict:
+    """Answer of a write tool; keeps the 202 marker so an async accept is not read as a create."""
+    answer = {**fields, "ok": True}
+    if data.get("accepted"):
+        answer["accepted"] = True
+    return answer
+
+
 def _pick(data: dict, keys: tuple[str, ...]) -> dict:
     """Whitelist of fields: keeps *Html duplicates and server noise out of the answer."""
     return {k: data[k] for k in keys if data.get(k) is not None}
@@ -216,7 +258,9 @@ def _statistic(raw: Any) -> dict:
             if isinstance(item, dict) and item.get("status")
         }
     if isinstance(raw, dict):
-        return {k: v for k, v in raw.items() if k in STATUS_KEYS}
+        # StatisticDto (inProgress, pending, total) keeps its own key names; filtering
+        # by the status list above would drop counts silently.
+        return dict(raw)
     return {}
 
 
@@ -497,6 +541,12 @@ def get_test_case(test_case_id: int) -> str:
     return {"ok": True, **_pick(data, TEST_CASE_KEYS), "steps_not_included": True}
 
 
+def _scenario_roots(by_id: dict) -> list[dict]:
+    """Roots of a scenario the API did not name: steps no other step lists as a child."""
+    child_ids = {str(child) for step in by_id.values() for child in step.get("children") or []}
+    return [step for key, step in by_id.items() if key not in child_ids]
+
+
 def _step_node(step: dict, by_id: dict, seen: frozenset = frozenset()) -> dict:
     node = _pick(step, ("id", "body", "expectedResult", "attachmentId", "sharedStepId"))
     children = []
@@ -515,7 +565,8 @@ def get_test_case_steps(test_case_id: int, as_tree: bool = True) -> str:
 
     as_tree=true (default) returns nested steps: {id, body, expectedResult, attachmentId,
     sharedStepId, children}. as_tree=false returns the raw scenarioSteps map by id.
-    Attachment contents are not inlined - only attachmentId.
+    A shared step appears as a node with sharedStepId only - its own steps are not inlined.
+    Attachment contents are not inlined either.
     """
     data = _api("GET", f"/api/testcase/{test_case_id}/step")
     if not as_tree:
@@ -524,7 +575,10 @@ def get_test_case_steps(test_case_id: int, as_tree: bool = True) -> str:
     root = data.get("root") or {}
     if isinstance(root, int):
         root = by_id.get(str(root)) or {}
-    steps = [_step_node(root, by_id)] if root else []
+    if root:
+        steps = [_step_node(root, by_id)]
+    else:
+        steps = [_step_node(step, by_id, frozenset({step.get("id")})) for step in _scenario_roots(by_id)]
     return {"ok": True, "testCaseId": test_case_id, "steps": steps}
 
 
@@ -551,7 +605,7 @@ def search_test_cases(
     if not query:
         if not (name or "").strip():
             raise TestOpsError("rql or name is required")
-        query = f'name ~ "{name.strip()}"'
+        query = f'name ~ "{_aql_text(name.strip())}"'
     res = _paged(
         "/api/testcase/__search",
         {"projectId": pid, "rql": query, "deleted": True if deleted else None},
@@ -592,8 +646,9 @@ def create_test_case(
       custom_fields_json [{"customField": {"id": 12, "name": "Severity"}, "name": "high"}]
                          (the API requires both id and name of the custom field)
       scenario_json      {"steps": [{"type": "body", "body": "Open the form"}]}
-    Ids for status_id, workflow_id and test_layer_id come from list_statuses and
-    list_reference. More steps are added with add_test_case_step.
+    Ids for status_id, workflow_id and test_layer_id are project references, readable with
+    api_request: GET /api/status, GET /api/workflow, GET /api/testlayer.
+    More steps are added with add_test_case_step.
     """
     pid = _pid(project_id)
     body = _test_case_body(
@@ -614,7 +669,7 @@ def create_test_case(
         automated=automated,
     )
     data = _api("POST", "/api/testcase", body=body)
-    return {"ok": True, **_pick(data, ("id", "name", "projectId"))}
+    return _answer(data, **_pick(data, ("id", "name", "projectId")))
 
 
 @_write
@@ -630,7 +685,9 @@ def update_test_case(
     test_layer_id: int | None = None,
     tags_json: str = "",
     links_json: str = "",
+    members_json: str = "",
     custom_fields_json: str = "",
+    scenario_json: str = "",
     automated: bool | None = None,
     duration: int | None = None,
     clear: bool = False,
@@ -651,7 +708,9 @@ def update_test_case(
         "testLayerId": test_layer_id,
         "tags": _json_arg(tags_json, "tags_json"),
         "links": _json_arg(links_json, "links_json"),
+        "members": _json_arg(members_json, "members_json"),
         "customFields": _json_arg(custom_fields_json, "custom_fields_json"),
+        "scenario": _json_arg(scenario_json, "scenario_json"),
         "automated": automated,
         "duration": duration,
     }
@@ -659,7 +718,7 @@ def update_test_case(
     if not body:
         raise TestOpsError("nothing to update: pass at least one field")
     data = _api("PATCH", f"/api/testcase/{test_case_id}", body=body)
-    return {"ok": True, **_pick(data, ("id", "name", "projectId"))}
+    return _answer(data, **_pick(data, ("id", "name", "projectId")))
 
 
 @_write
@@ -684,11 +743,11 @@ def add_test_case_step(
     )
     data = _api("POST", "/api/testcase/step", body=step)
     scenario = data.get("scenario") or {}
-    return {
-        "ok": True,
-        "createdStepId": data.get("createdStepId"),
-        "steps_count": len(scenario.get("scenarioSteps") or {}),
-    }
+    return _answer(
+        data,
+        createdStepId=data.get("createdStepId"),
+        steps_count=len(scenario.get("scenarioSteps") or {}),
+    )
 
 
 # --- tools: test plans ------------------------------------------------------
@@ -741,7 +800,8 @@ def create_test_plan(
     """Create a test plan and return {ok, id, name, projectId}.
 
     base_rql is the AQL selection of the plan (e.g. tag.name = "smoke").
-    tree_selection_json: {"leafsInclude": [1001], "filterId": 3, "inverted": false}.
+    tree_selection_json: {"leafsInclude": [1001], "inverted": false} - the plan takes
+    TreeSelectionDto, which has no filterId (that one belongs to running cases).
     """
     pid = _pid(project_id)
     body = _test_plan_body(
@@ -752,7 +812,7 @@ def create_test_plan(
         tree_selection=_json_arg(tree_selection_json, "tree_selection_json"),
     )
     data = _api("POST", "/api/testplan", body=body)
-    return {"ok": True, **_pick(data, ("id", "name", "projectId"))}
+    return _answer(data, **_pick(data, ("id", "name", "projectId")))
 
 
 # --- tools: launches and results --------------------------------------------
@@ -782,9 +842,10 @@ def list_launches(
 ) -> str:
     """List launches of a project: id, name, closed, createdDate, statistic.
 
-    statistic is {passed, failed, broken, skipped, unknown} as counts; it is absent when the
-    API returns a launch shape without one. The API answers with two different launch
-    shapes; both are read into this summary.
+    statistic holds status counts as the API returns them, e.g. {passed, failed, broken,
+    skipped, unknown} or StatisticDto with inProgress, pending and total; it is absent when
+    the launch shape carries none. The API answers with two different launch shapes; both
+    are read into this summary.
     project_id defaults to TESTOPS_PROJECT_ID; sort defaults to "created_date,DESC".
     """
     pid = _pid(project_id)
@@ -857,7 +918,7 @@ def create_launch(
         links=_json_arg(links_json, "links_json"),
     )
     data = _api("POST", "/api/launch", body=body)
-    return {"ok": True, **_pick(data, ("id", "name", "projectId"))}
+    return _answer(data, **_pick(data, ("id", "name", "projectId")))
 
 
 @_write
@@ -884,6 +945,10 @@ def add_test_result(
     status must be one of failed, broken, passed, skipped, unknown, in_progress; any
     other value fails here, without a request. duration, start and stop are milliseconds
     (int64). test_case_id links the result to a test case.
+    JSON-string arguments:
+      tags_json          [{"id": 3, "name": "smoke"}]
+      links_json         [{"name": "JIRA", "type": "issue", "url": "https://jira/browse/ABC-1"}]
+      custom_fields_json [{"customField": {"id": 12, "name": "Severity"}, "name": "high"}]
     """
     body = _test_result_body(
         launch_id=launch_id,
@@ -904,7 +969,7 @@ def add_test_result(
         custom_fields=_json_arg(custom_fields_json, "custom_fields_json"),
     )
     data = _api("POST", "/api/testresult", body=body)
-    return {"ok": True, **_pick(data, ("id", "name", "launchId"))}
+    return _answer(data, **_pick(data, ("id", "name", "launchId")))
 
 
 @_write
@@ -943,7 +1008,7 @@ def run_test_cases(
         release_id=release_id,
     )
     data = _api("POST", "/api/testcase/bulk/run/new", body=body)
-    return {"ok": True, "launchId": data.get("id"), **_pick(data, ("name", "projectId"))}
+    return _answer(data, launchId=data.get("id"), **_pick(data, ("name", "projectId")))
 
 
 # --- tools: escape hatch ----------------------------------------------------
@@ -965,6 +1030,7 @@ def api_request(method: str, path: str, params_json: str = "", body_json: str = 
     verb = (method or "").strip().upper()
     if verb not in ALLOWED_METHODS:
         raise TestOpsError(f"method must be one of {', '.join(ALLOWED_METHODS)}")
+    path = _normalized_path(path)
     if not (path == "/api" or path.startswith("/api/")):
         raise TestOpsError("path must start with /api")
     for prefix in FORBIDDEN_PREFIXES:

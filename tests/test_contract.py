@@ -76,6 +76,13 @@ def test_add_step_body():
     assert_valid("ScenarioStepCreateDto", testops._step_body(42, body="Open the form"))
     assert_valid("ScenarioStepCreateDto", testops._step_body(42, attachment_id=7))
     assert_valid("ScenarioStepCreateDto", testops._step_body(42, body="child", parent_id=1))
+    # No request DTO in the snapshot sets additionalProperties: false, so a schema check
+    # alone lets a renamed field through; the body itself is pinned down here.
+    assert testops._step_body(42, body="Open", parent_id=1) == {
+        "testCaseId": 42,
+        "parentId": 1,
+        "body": "Open",
+    }
 
 
 def test_add_step_body_requires_exactly_one_source():
@@ -93,6 +100,12 @@ def test_create_test_plan_body():
         tree_selection={"leafsInclude": [1001, 1002], "inverted": False},
     )
     assert_valid("TestPlanCreateDto", body)
+    assert body == {
+        "projectId": 65,
+        "name": "Smoke plan",
+        "baseRql": 'tag.name = "smoke"',
+        "treeSelection": {"leafsInclude": [1001, 1002], "inverted": False},
+    }
 
 
 def test_create_launch_body():
@@ -104,6 +117,13 @@ def test_create_launch_body():
         tags=[{"id": 3, "name": "regress"}],
     )
     assert_valid("LaunchCreateDto", body)
+    assert body == {
+        "projectId": 65,
+        "name": "Regress 2026-11-09",
+        "autoclose": True,
+        "releaseId": 4,
+        "tags": [{"id": 3, "name": "regress"}],
+    }
 
 
 def test_add_test_result_body():
@@ -119,6 +139,17 @@ def test_add_test_result_body():
         stop=2,
     )
     assert_valid("TestResultCreateV2Dto", body)
+    assert body == {
+        "launchId": 10,
+        "name": "Login smoke",
+        "status": "failed",
+        "testCaseId": 42,
+        "duration": 1300,
+        "message": "expected dashboard, got error",
+        "trace": "stack",
+        "start": 1,
+        "stop": 2,
+    }
 
 
 def test_add_test_result_rejects_unknown_status():

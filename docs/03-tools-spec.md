@@ -277,8 +277,11 @@ filter_id: int = None, assignees: str = "", tags_json=None, release_id: int = No
 `_api(method, path, params, body)`. Ограничения (обязательны, см. `../AGENTS.md`):
 
 - `path` обязан начинаться с `/api` (иначе ошибка; не подставлять `/api` молча — это скрывает опечатки);
-- запрещённые префиксы: `/api/project` при `DELETE`, `/api/account`, `/api/mfa`, `/api/admin`,
-  `/api/registration`, `/api/invite`, `/api/integration`, `/api/token`;
+  перед проверками путь раскодируется и нормализуется, иначе `/api/testcase/../api/account/1` и
+  `/api/%61ccount/1` обходят денилист;
+- запрещённые префиксы (по фактическим путям снимка): `/api/project` при `DELETE`, `/api/account`,
+  `/api/register`, `/api/admin`, `/api/mfa`, `/api/globalsettings/mfa`, `/api/email-verification`,
+  `/api/invite`, `/api/login/invite-personal`, `/api/integration`, `/api/token`;
 - метод из набора `GET | POST | PUT | PATCH | DELETE`;
 - `params_json`/`body_json` — JSON-объекты, не массивы;
 - при `TESTOPS_READ_ONLY=true` разрешён только `GET`.

@@ -21,6 +21,27 @@
   в `TestCaseTreeSelectionDto` нет поля `rql` — оба факта в `docs/06-open-questions.md` (5 и 12), спека
   инструментов в `docs/03-tools-spec.md` приведена к коду.
 
+### M1, ревью
+
+- `api_request`: в денилисте стоял несуществующий `/api/registration` — регистрация в спеке это
+  `POST /api/register`, то есть учётку можно было создать. Добавлены `/api/register`,
+  `/api/globalsettings/mfa`, `/api/email-verification`, `/api/login/invite-personal`; путь перед
+  проверками раскодируется и нормализуется, иначе `/api/%61ccount/1` и `/api/./account/1` обходили список.
+- `202` с телом больше не теряется: `_api` отдаёт тело вместе с `accepted`, write-инструменты собирают
+  ответ через `_answer`, поэтому `launchId`/`createdStepId` не приходят `null` и «принято асинхронно»
+  отличимо от «создано».
+- Docstring'и сверены со схемами: `MemberDto.role` — объект `RoleDto`, `CustomFieldDto` требует `id` и
+  `name`, у `TreeSelectionDto` нет `filterId`, `update_test_case` получил `members_json` и
+  `scenario_json`, `add_test_result` описал свои JSON-аргументы, `create_test_case` больше не ссылается
+  на инструменты M2.
+- `search_test_cases` экранирует кавычки в `name`; `_statistic` для объекта отдаёт ключи как есть
+  (`StatisticDto`: `inProgress`, `pending`, `total`); `get_test_case_steps` сам находит корни, если
+  `root` не пришёл — раньше вернулось бы ложное «шагов нет».
+- Тесты: 62 вместо 36 — тела write-инструментов сверяются с отправленным запросом, проверены `_http()`
+  (один клиент, `Api-Token`, таймаут), исчерпание ретраев, транспортная ошибка, `202` с телом, ответ
+  без конверта, все 10 запрещённых префиксов, четыре метода в read-only, `main()` без токена и точный
+  набор инструментов в обоих режимах; фикстура `api` падает, если хендлер не установлен.
+
 ## 2026-11-09 — M0. Каркас пакета
 
 - Поднят каркас `mcp-testops` на официальном SDK `mcp` v2 (`MCPServer` из `mcp.server`, проверено

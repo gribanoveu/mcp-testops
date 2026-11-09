@@ -132,8 +132,10 @@ python -m mcp_testops                          # stdio MCP, читает TESTOPS
 - Хардкодить `TESTOPS_TOKEN`, `TEST_OPS_TOKEN` или любой другой секрет — в код, тесты, README, коммиты.
   README показывает `"TESTOPS_TOKEN": "****"`, реальное значение живёт только в локальном конфиге.
 - Логировать заголовки запросов и тела ответов с персональными данными.
-- Выводить инструменты для `/api/account*`, `/api/mfa*`, `/api/admin*`, `/api/registration`, `/api/invite`,
-  `/api/integration*` (в интеграциях лежат секреты) и для удаления проекта.
+- Выводить инструменты для `/api/account*`, `/api/register`, `/api/mfa*`, `/api/globalsettings/mfa`,
+  `/api/admin*`, `/api/email-verification*`, `/api/invite*`, `/api/login/invite-personal`,
+  `/api/integration*` (в интеграциях лежат секреты) и для удаления проекта. Список — по фактическим
+  путям снимка: `/api/registration` там нет, регистрация — `POST /api/register`.
 - Оставлять `api_request` без ограничений: он не должен пропускать `DELETE /api/project/...` и пути вне
   `/api/`. Список запрещённых префиксов — в `docs/03-tools-spec.md`, последний раздел.
 - Расширять `api_request` до «загрузить файл»: для вложений и архивов есть отдельные эндпоинты, а
