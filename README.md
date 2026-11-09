@@ -45,17 +45,19 @@ MCP-сервер (stdio) поверх API Allure TestOps: проекты, тес
 ### 1. Одной командой
 
 ```bash
-uvx mcp-testops                            # Python, без установки (PyPI)
-npx -y @gribanoveu/mcp-testops             # Node, тот же сервер (обёртка над бинарником)
+uvx --from git+https://github.com/gribanoveu/mcp-testops mcp-testops   # работает сейчас
+uvx mcp-testops                                                      # после публикации в PyPI
+npx -y @gribanoveu/mcp-testops                                       # после публикации в npm
 ```
 
-`npx`-обёртка скачивает бинарник своей платформы из этого же Release в `~/.cache/mcp-testops/` и
-запускает его; stdout у неё чистый, всё служебное идёт в stderr — протокол MCP не ломается.
+Первый вариант не требует ничего, кроме [uv](https://docs.astral.sh/uv/): `uvx` собирает пакет прямо из
+репозитория в кеш и запускает. `npx`-обёртка скачивает бинарник своей платформы из этого же Release
+в `~/.cache/mcp-testops/` и запускает его; stdout у неё чистый, всё служебное идёт в stderr — протокол
+MCP не ломается.
 
-> Пока пакет не опубликован в PyPI и npm, эти две команды не работают — используйте бинарник или
-> колесо. Публикация настроена: `.github/workflows/publish-pypi.yml` (trusted publishing, нужен
-> один раз создать проект `mcp-testops` на PyPI) и job `npm` в релизном workflow (нужен секрет
-> `NPM_TOKEN`).
+> Две последние команды заработают после первой публикации: PyPI — создать проект `mcp-testops` и trusted
+> publisher для `.github/workflows/publish-pypi.yml` (job `publish` там с `continue-on-error`: пока PyPI
+> не настроен, он падает, не валяя релиз), npm — секрет `NPM_TOKEN` в настройках репозитория.
 
 ### 2. Бинарник из Releases
 
@@ -82,7 +84,7 @@ chmod +x mcp-testops-<platform>
 Нужен Python 3.10+. Колесо `py3-none-any` — одно на все платформы:
 
 ```bash
-pip install https://github.com/gribanoveu/mcp-testops/releases/download/v0.1.3/mcp_testops-0.1.3-py3-none-any.whl
+pip install https://github.com/gribanoveu/mcp-testops/releases/download/v0.1.4/mcp_testops-0.1.4-py3-none-any.whl
 python -m mcp_testops
 ```
 

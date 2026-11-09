@@ -48,24 +48,25 @@ function run() {
   child.on("exit", (code, signal) => process.exit(signal ? 1 : code === null ? 0 : code));
 }
 
-function download(target, redirects) {
-  if (redirects > 5) return fail(`too many redirects for ${url}`);
-  const request = get(url, { headers: { "user-agent": `mcp-testops/${pkg.version}` } }, (response) => {
+function download(source, target, redirects) {
+  if (redirects > 5) return fail(`too many redirects for ${source}`);
+  const request = get(source, { headers: { "user-agent": `mcp-testops/${pkg.version}` } }, (response) => {
     const status = response.statusCode || 0;
     if (status >= 300 && status < 400 && response.headers.location) {
       response.resume();
-      return download(target, redirects + 1);
+      // GitHub redirects release assets to objects.githubusercontent.com.
+      return download(response.headers.location, target, redirects + 1);
     }
     if (status !== 200) {
       response.resume();
-      return fail(`HTTP ${status} on ${url}`);
+      return fail(`HTTP ${status} on ${source}`);
     }
     const file = createWriteStream(target);
     response.pipe(file);
     file.on("finish", () => file.close(run));
     file.on("error", (error) => fail(`cannot write ${target}: ${error.message}`));
   });
-  request.on("error", (error) => fail(`cannot download ${url}: ${error.message}`));
+  request.on("error", (error) => fail(`cannot download ${source}: ${error.message}`));
 }
 
 if (existsSync(binary)) {
@@ -73,5 +74,5 @@ if (existsSync(binary)) {
 } else {
   mkdirSync(cacheDir, { recursive: true });
   process.stderr.write(`mcp-testops: downloading ${asset} (v${pkg.version})\n`);
-  download(binary, 0);
+  download(url, binary, 0);
 }

@@ -32,6 +32,9 @@ jobs:
     environment: pypi
     permissions:
       id-token: write
+    # The project does not exist on PyPI until the trusted publisher is configured there;
+    # until then this job reports a failure without painting the release run red.
+    continue-on-error: true
     steps:
       - uses: actions/download-artifact@v4
         with:
