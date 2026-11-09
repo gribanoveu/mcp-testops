@@ -2,6 +2,20 @@
 
 Что сделано, по этапам из `docs/05-plan.md`: одна строка на этап, новое — сверху.
 
+## 2026-11-09 — M1.5. Generic-инструмент убран, справочники добавлены
+
+- `api_request` удалён из сервера целиком. Денилист по принципу «разрешено всё, что не перечислено»
+  пропускал `POST /api/register` (в спеке нет `/api/registration`), обход через `%61ccount` и `..`
+  требовал нормализации пути, а `POST /api/testcase/bulk/remove` проходил без валидации тела.
+  Правило «не возвращать» — `docs/03-tools-spec.md` §7 и `AGENTS.md`; набор держит закрытым тест
+  `test_no_generic_escape_hatch`.
+- Без generic-вызова id статуса стало неоткуда брать, поэтому сразу появились справочники:
+  `list_statuses` (`GET /api/status`; у эндпоинта нет `projectId` — статусы задаются workflow) и
+  `list_reference` (`workflow`, `testlayer`, `custom_field`, `tag`; `tag` — плоский массив, `query`
+  фильтруется на клиенте). Оба с тестами на путь, параметры и компактный ответ.
+- Итог: 20 инструментов (13 read + 7 write), в `TESTOPS_READ_ONLY=true` — 13. Из 29 по спеке остались
+  `validate_aql`, `get_launch_statistic`, `get_test_result` (M2) и шесть write (M3).
+
 ## 2026-11-09 — M1. Клиент, контрактные тесты, критические исправления
 
 - Один `httpx.Client` на процесс (`TESTOPS_TIMEOUT`, `TESTOPS_VERIFY_SSL`, заголовок `Api-Token`),

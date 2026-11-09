@@ -1,7 +1,8 @@
 # 03. Спецификация инструментов
 
-30 инструментов: 16 read, 13 write, 1 generic. Ниже — сигнатура, эндпоинт, тело, что возвращаем и на
-что наступить нельзя. Схемы — в `../openapi/key-schemas.json`, эндпоинты — в `../openapi/api-inventory.md`.
+29 инструментов: 16 read, 13 write. Generic `api_request` сознательно не выводим — почему, в §7.
+Ниже — сигнатура, эндпоинт, тело, что возвращаем и на что наступить нельзя. Схемы — в
+`../openapi/key-schemas.json`, эндпоинты — в `../openapi/api-inventory.md`.
 
 Все инструменты объявляются штатным декоратором официального SDK — `@mcp.tool()` (`MCPServer` в v2,
 `FastMCP` в v1) и возвращают `str` с JSON. Собственный слой над протоколом, реестр инструментов или
@@ -55,7 +56,6 @@
 | 26 | `delete_launch` | write | `DELETE /api/launch/{id}` |
 | 27 | `add_test_result` | write | `POST /api/testresult` |
 | 28 | `run_test_cases` | write | `POST /api/testcase/bulk/run/new` |
-| — | `api_request` | generic | любой `/api/...` |
 
 ---
 
@@ -250,12 +250,12 @@ filter_id: int = None, assignees: str = "", tags_json=None, release_id: int = No
 
 ## 6. Справочники
 
-### `list_statuses(project_id=None, workflow_id: int = None) -> str`
+### `list_statuses(workflow_id: int = None, page=0, size=50, sort="") -> str`
 
 `GET /api/status` с `workflowId?` → `{content:[{id, name, color}], ...}`. Нужен, чтобы получить `statusId`
-для `create_test_case`.
+для `create_test_case`. Параметра `projectId` у эндпоинта в спеке нет: статусы задаются workflow.
 
-### `list_reference(kind: str, project_id=None, query: str = None) -> str`
+### `list_reference(kind: str, project_id=None, query="", page=0, size=50) -> str`
 
 Один инструмент вместо четырёх — `kind` из `workflow | testlayer | custom_field | tag`:
 
@@ -264,27 +264,33 @@ filter_id: int = None, assignees: str = "", tags_json=None, release_id: int = No
 | `workflow` | `GET /api/workflow` |
 | `testlayer` | `GET /api/testlayer` |
 | `custom_field` | `GET /api/project/{projectId}/cf` (**не** deprecated `/api/cf`) |
-| `tag` | `GET /api/tag` (плоский массив `TestTagDto`, без пагинации) |
+| `tag` | `GET /api/tag` (плоский массив `TestTagDto`, без пагинации — `query` фильтрует на клиенте) |
 
 Неизвестный `kind` → `{"ok": false, "error": "kind must be one of workflow, testlayer, custom_field, tag"}`.
+`custom_field` требует `project_id` (или `TESTOPS_PROJECT_ID`), остальные — нет.
 
 ---
 
-## 7. `api_request` — escape hatch
+## 7. Generic `api_request` — сознательно нет
 
-### `api_request(method: str, path: str, params_json: str = None, body_json: str = None) -> str`
+В первом варианте спеки здесь был escape hatch «любой `/api/...` под денилистом». От него отказались:
 
-`_api(method, path, params, body)`. Ограничения (обязательны, см. `../AGENTS.md`):
+- денилист по принципу «разрешено всё, что не перечислено» провалился на практике: в нём стоял
+  `/api/registration`, которого в снимке нет, а регистрация — `POST /api/register`, то есть создание
+  учётной записи проходило мимо правил;
+- обход через `%61ccount` и `..` пришлось закрывать нормализацией пути — и каждый следующий обход
+  пришлось бы закрывать так же;
+- generic-инструмент обнуляет смысл остальных: `POST /api/testcase/bulk/remove` или
+  `DELETE /api/testcase/{id}` проходят через него без валидации тела и без предупреждений;
+- цена — пересматривать денилист на каждом этапе, пока не найдётся очередная дыра.
 
-- `path` обязан начинаться с `/api` (иначе ошибка; не подставлять `/api` молча — это скрывает опечатки);
-  перед проверками путь раскодируется и нормализуется, иначе `/api/testcase/../api/account/1` и
-  `/api/%61ccount/1` обходят денилист;
-- запрещённые префиксы (по фактическим путям снимка): `/api/project` при `DELETE`, `/api/account`,
-  `/api/register`, `/api/admin`, `/api/mfa`, `/api/globalsettings/mfa`, `/api/email-verification`,
-  `/api/invite`, `/api/login/invite-personal`, `/api/integration`, `/api/token`;
-- метод из набора `GET | POST | PUT | PATCH | DELETE`;
-- `params_json`/`body_json` — JSON-объекты, не массивы;
-- при `TESTOPS_READ_ONLY=true` разрешён только `GET`.
+Что вместо него:
 
-Docstring обязан перечислить запреты — иначе агент будет использовать `api_request` как обходной путь и
-однажды снесёт проект.
+- всё, что реально нужно агенту, закрыто 29 именованными инструментами с проверенными телами;
+- справочники (`list_statuses`, `list_reference`) закрывают Д6 — без них нечем заполнить `statusId`,
+  `workflowId`, `testLayerId`;
+- чего нет среди инструментов (дерево, общие шаги, дефекты, вложения), через MCP недоступно вообще:
+  если это понадобится, добавляется именованный инструмент с телом из схемы, а не generic-вызов.
+
+Правило для следующих этапов: **не вводить generic-инструмент обратно**, ни за флагом, ни «только для
+GET». Если агенту не хватает охвата, расширять список именованных инструментов по `api-inventory.md`.

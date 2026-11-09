@@ -247,7 +247,8 @@ GET /api/testcase/{id}/step → NormalizedScenarioDto
 | `jobId` | int | выбор из джоба |
 | `deleted` | bool | включать удалённые |
 
-Похожие bulk-операции по кейсам (не выводим в инструменты, доступны через `api_request`):
+Похожие bulk-операции по кейсам (в инструменты не выводим; generic-инструмента нет, поэтому через MCP
+они недоступны — понадобятся, добавлять именованными инструментами):
 `/api/testcase/bulk/run/existing` (в существующий запуск), `/bulk/run/distribution-preview`,
 `/bulk/move`, `/bulk/remove`, `/bulk/clone`, `/bulk/tag/add|remove`, `/bulk/status/set`,
 `/bulk/testplan/create`, `/bulk/cfv/add|remove`, `/bulk/layer/set`, `/bulk/mute/add`.

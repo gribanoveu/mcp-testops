@@ -96,8 +96,11 @@ Docstring (строка 152): «Get a full test case by id, **including scenario
 молча подставляет `/api`). То есть правило «удаление проекта не выводим» обходится вызовом
 `api_request("DELETE", "/api/project/65")`.
 
-**Исправление:** allowlist/denylist префиксов, whitelist методов, запрет `DELETE /api/project*`,
-уважение `TESTOPS_READ_ONLY`. Не подставлять `/api` молча — возвращать ошибку.
+**Исправление:** сначала — allowlist/denylist префиксов, whitelist методов, запрет
+`DELETE /api/project*`, уважение `TESTOPS_READ_ONLY`; затем **инструмент убран совсем**: денилист по
+принципу «разрешено всё, что не перечислено» пропустил регистрацию (`/api/register`), обход через
+`%61ccount` и `..` пришлось закрывать нормализацией пути, а `POST /api/testcase/bulk/remove` проходил без
+валидации тела. Причина и правило — `03-tools-spec.md` §7.
 
 ### Д5 (важно). Новый `httpx.Client` на каждый вызов
 

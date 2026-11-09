@@ -48,7 +48,7 @@
 9. Контрактные тесты:
    - `tests/test_contract.py`: каждое тело, собираемое инструментами, валидируется схемой из
      `../openapi/api-docs.json` (`jsonschema`); список тел — не меньше 8 (create/update test case, step,
-     test plan, launch, test result, run_test_cases, api_request).
+     test plan, launch, test result, run_test_cases).
    - `tests/test_client.py`: `httpx.MockTransport` — пагинация, `oneOf` запусков, `202`, `204`, ошибка с `message`.
    - `tests/test_tool_guards.py`: `project_id` без env даёт понятную ошибку; `TESTOPS_READ_ONLY` скрывает write.
 
@@ -60,13 +60,14 @@
 
 ## M2. Полный read-контур
 
-**Цель:** агент может разобраться в проекте, не прибегая к `api_request`.
+**Цель:** агент может разобраться в проекте, пользуясь только именованными инструментами.
 
 Задачи:
 
-1. `list_statuses(project_id?, workflow_id?)` — `GET /api/status`.
-2. `list_reference(kind, project_id?, query?)` — `workflow | testlayer | custom_field | tag`
-   (`/api/workflow`, `/api/testlayer`, `/api/project/{projectId}/cf`, `/api/tag`).
+1. `list_statuses(workflow_id?, page, size, sort)` — `GET /api/status`. Сделано в M1 вместе с отказом
+   от `api_request`: без справочника стало нечем получить `statusId`. У эндпоинта нет `projectId`.
+2. `list_reference(kind, project_id?, query?, page, size)` — `workflow | testlayer | custom_field | tag`
+   (`/api/workflow`, `/api/testlayer`, `/api/project/{projectId}/cf`, `/api/tag`). Сделано там же.
 3. `validate_aql(project_id?, rql, deleted)` — `/api/testcase/query/validate`.
 4. `get_launch_statistic(launch_id)` — `/api/launch/{id}/statistic`.
 5. `get_test_result(test_result_id)` — `/api/testresult/{id}` с белым списком полей.
@@ -76,7 +77,7 @@
 
 **Критерии приёмки:**
 - сценарий «найти кейсы по тегу → открыть кейс → прочитать шаги → найти прогоны с этим кейсом»
-  выполняется без единого `api_request`;
+  выполняется только именованными инструментами, без обходных путей;
 - тест на каждый новый инструмент с записанным ответом (MockTransport), включая форму `LaunchPreviewDto`;
 - живой смоук: `list_projects` → `list_reference("workflow", 65)` → `search_test_cases(rql='name ~ "a"')`.
 
@@ -106,9 +107,10 @@
 
 Задачи:
 
-1. `api_request` — whitelist методов, denylist префиксов (`/api/project*` для `DELETE`, `/api/account`,
-   `/api/mfa`, `/api/admin`, `/api/registration`, `/api/invite`, `/api/integration`, `/api/token`),
-   обязательный префикс `/api` без автоподстановки, уважение `TESTOPS_READ_ONLY`.
+1. Generic-инструмента нет — проверить, что он не вернулся (тест на точный список инструментов), и что
+   новые инструменты не открывают запрещённые эндпоинты (`/api/account*`, `/api/register`, `/api/mfa*`,
+   `/api/globalsettings/mfa`, `/api/admin*`, `/api/email-verification*`, `/api/invite*`,
+   `/api/login/invite-personal`, `/api/integration*`, `/api/token*`, удаление проекта).
 2. Логи: ни токена, ни заголовков, ни тел ответов; только метод, путь, код, длительность.
 3. README: актуальная версия API (`527u04`, дата снятия), проверенная схема авторизации, таблица env,
    пример `opencode.json` с `"TESTOPS_TOKEN": "****"`, раздел «Ограничения» (TLS verify off, read-only).
@@ -116,7 +118,8 @@
 5. Дифф спеки: скрипт/инструкция «как переснять `api-docs` и что смотреть».
 
 **Критерии приёмки:**
-- `api_request("DELETE", "/api/project/65")` возвращает ошибку, а не удаляет проект (тест);
+- `DELETE /api/project*` и запрещённые префиксы недостижимы через MCP вообще: в наборе нет инструмента,
+  который берёт путь строкой (тест на точный список инструментов);
 - `grep -ri "token" README.md` не находит реального значения;
 - README упоминает `527u04` и дату снятия спеки.
 

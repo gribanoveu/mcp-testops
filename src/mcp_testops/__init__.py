@@ -7,10 +7,8 @@ from ``TESTOPS_*`` environment variables (see README).
 import functools
 import json
 import os
-import posixpath
 import time
 from typing import Any
-from urllib.parse import unquote
 
 import httpx
 from mcp.server import MCPServer
@@ -36,19 +34,7 @@ RETRY_ATTEMPTS = 3
 RETRY_BACKOFF = 0.5
 
 TEST_STATUSES = ("failed", "broken", "passed", "skipped", "unknown", "in_progress")
-ALLOWED_METHODS = ("DELETE", "GET", "PATCH", "POST", "PUT")
-FORBIDDEN_PREFIXES = (
-    "/api/account",
-    "/api/register",  # account creation; /api/registration does not exist in the snapshot
-    "/api/admin",
-    "/api/mfa",
-    "/api/globalsettings/mfa",  # MFA settings live outside /api/mfa
-    "/api/email-verification",
-    "/api/invite",
-    "/api/login/invite-personal",
-    "/api/integration",
-    "/api/token",
-)
+REFERENCE_KINDS = ("workflow", "testlayer", "custom_field", "tag")
 
 mcp = MCPServer(SERVER_NAME)
 
@@ -191,21 +177,6 @@ def _pid(project_id: int | None) -> int:
 def _aql_text(value: str) -> str:
     """Escape a value for an AQL string literal; the syntax itself is unverified."""
     return value.replace("\\", "\\\\").replace('"', '\\"')
-
-
-def _normalized_path(path: str) -> str:
-    """Look at the path the way the server will: decoded, dot segments resolved.
-
-    ``/api/testcase/../api/account/1`` and ``/api/%61ccount`` must not slip past the
-    deny list of api_request, which would otherwise compare prefixes on raw text.
-    """
-    decoded = path
-    for _ in range(3):
-        unquoted = unquote(decoded)
-        if unquoted == decoded:
-            break
-        decoded = unquoted
-    return posixpath.normpath(decoded) if decoded.startswith("/") else decoded
 
 
 def _json_arg(value: str | None, name: str) -> Any:
@@ -646,9 +617,8 @@ def create_test_case(
       custom_fields_json [{"customField": {"id": 12, "name": "Severity"}, "name": "high"}]
                          (the API requires both id and name of the custom field)
       scenario_json      {"steps": [{"type": "body", "body": "Open the form"}]}
-    Ids for status_id, workflow_id and test_layer_id are project references, readable with
-    api_request: GET /api/status, GET /api/workflow, GET /api/testlayer.
-    More steps are added with add_test_case_step.
+    Ids for status_id, workflow_id and test_layer_id come from list_statuses and
+    list_reference. More steps are added with add_test_case_step.
     """
     pid = _pid(project_id)
     body = _test_case_body(
@@ -1011,41 +981,60 @@ def run_test_cases(
     return _answer(data, launchId=data.get("id"), **_pick(data, ("name", "projectId")))
 
 
-# --- tools: escape hatch ----------------------------------------------------
+# --- tools: references ------------------------------------------------------
 
 
 @mcp.tool()
 @_guard
-def api_request(method: str, path: str, params_json: str = "", body_json: str = "") -> str:
-    """Call any /api/... endpoint the named tools do not cover.
+def list_statuses(
+    workflow_id: int | None = None,
+    page: int = 0,
+    size: int = DEFAULT_PAGE_SIZE,
+    sort: str = "",
+) -> str:
+    """List test statuses (id, name, color) - they give status_id for create_test_case.
 
-    method: GET, POST, PUT, PATCH or DELETE. path must start with /api - it is not
-    prefixed for you, so a typo stays visible. params_json and body_json are JSON
-    objects (not arrays).
-    Refused: /api/account*, /api/mfa*, /api/admin*, /api/registration, /api/invite,
-    /api/integration* (secrets live there), /api/token*, DELETE /api/project*, and any
-    method but GET when TESTOPS_READ_ONLY=true.
-    Returns {ok, data} with the response body as is, {ok, accepted} for 202/204.
+    workflow_id narrows the answer to one workflow. The endpoint takes no project id:
+    statuses are defined by workflows, not by projects.
     """
-    verb = (method or "").strip().upper()
-    if verb not in ALLOWED_METHODS:
-        raise TestOpsError(f"method must be one of {', '.join(ALLOWED_METHODS)}")
-    path = _normalized_path(path)
-    if not (path == "/api" or path.startswith("/api/")):
-        raise TestOpsError("path must start with /api")
-    for prefix in FORBIDDEN_PREFIXES:
-        if path.startswith(prefix):
-            raise TestOpsError(f"{prefix}* endpoints are not available through api_request")
-    if verb == "DELETE" and path.startswith("/api/project"):
-        raise TestOpsError("DELETE /api/project* is not allowed")
-    if READ_ONLY and verb != "GET":
-        raise TestOpsError("read-only mode: only GET is allowed")
-    params = _json_arg(params_json, "params_json")
-    body = _json_arg(body_json, "body_json")
-    for name, value in (("params_json", params), ("body_json", body)):
-        if value is not None and not isinstance(value, dict):
-            raise TestOpsError(f"{name} must be a JSON object")
-    return {"ok": True, "data": _api(verb, path, params=params, body=body)}
+    res = _paged("/api/status", {"workflowId": workflow_id}, page=page, size=size, sort=sort)
+    res["content"] = [_pick(item, ("id", "name", "color")) for item in res["content"]]
+    return {"ok": True, **res}
+
+
+@mcp.tool()
+@_guard
+def list_reference(
+    kind: str,
+    project_id: int | None = None,
+    query: str = "",
+    page: int = 0,
+    size: int = DEFAULT_PAGE_SIZE,
+) -> str:
+    """List a reference dictionary by kind: workflow, testlayer, custom_field or tag.
+
+    Returns id and name of every entry - they are what create_test_case wants in
+    workflow_id, test_layer_id and custom_fields_json.
+    custom_field is project scoped (project_id defaults to TESTOPS_PROJECT_ID) and accepts
+    query; tag is a flat list without pagination, so query is applied here.
+    """
+    if kind not in REFERENCE_KINDS:
+        raise TestOpsError(f"kind must be one of {', '.join(REFERENCE_KINDS)}")
+    if kind == "tag":
+        data = _api("GET", "/api/tag")
+        tags = [item for item in data if isinstance(item, dict)] if isinstance(data, list) else []
+        if query:
+            tags = [item for item in tags if query.lower() in str(item.get("name", "")).lower()]
+        return {"ok": True, "kind": kind, "content": [_pick(item, ("id", "name")) for item in tags]}
+    if kind == "workflow":
+        path, params = "/api/workflow", {}
+    elif kind == "testlayer":
+        path, params = "/api/testlayer", {}
+    else:
+        path, params = f"/api/project/{_pid(project_id)}/cf", {"query": query or None}
+    res = _paged(path, params, page=page, size=size)
+    res["content"] = [_pick(item, ("id", "name")) for item in res["content"]]
+    return {"ok": True, "kind": kind, **res}
 
 
 def main() -> None:

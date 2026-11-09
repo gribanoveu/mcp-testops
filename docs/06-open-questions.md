@@ -123,7 +123,8 @@ https://testops.moscow.alfaintra.net/api/project?size=1` → `200`. Контро
 
 **Как закрыть:** взять кейс с известным id, найти его через `GET /api/testcasetree/paths` или
 `GET /api/testcasetree/leaf` и сравнить id; затем прогнать `bulk/run/new` с одним `leafsInclude`
-и убедиться, что в запуске ровно один результат.
+и убедиться, что в запуске ровно один результат. Через MCP дерево недоступно (generic-инструмента нет),
+так что снимать `curl`'ом или DevTools — или сначала добавить именованный инструмент дерева.
 
 **Влияет на:** `run_test_cases` (`ids` → `leafsInclude`) и на любые выборки по дереву.
 

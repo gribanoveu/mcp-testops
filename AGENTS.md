@@ -36,7 +36,7 @@ testops-mcp/
 ├── tests/
 │   ├── test_contract.py      # тела запросов валидируются схемами
 │   ├── test_client.py        # httpx.MockTransport: пагинация, oneOf, 202/204, ошибки
-│   └── test_tool_guards.py   # project_id, TESTOPS_READ_ONLY, запреты api_request
+│   └── test_tool_guards.py   # project_id, TESTOPS_READ_ONLY, отсутствие generic-инструмента
 └── src/mcp_testops/
     ├── __init__.py           # сервер SDK + инструменты, по функции на инструмент
     └── __main__.py           # from . import main; main()
@@ -102,7 +102,8 @@ python -m mcp_testops                          # stdio MCP, читает TESTOPS
 - Всё, что зависит от стенда и проекта, приходит из **env**, а не из кода: один и тот же пакет должен
   подниматься под разные проекты (см. `docs/01-contract.md`, раздел «Конфигурация»).
 - Набор инструментов и их сигнатуры — в `docs/03-tools-spec.md`. Не расширяй его «на будущее»: всего 634 пути
-  в API закрываются 30 инструментами плюс `api_request`.
+  в API закрываются 29 именованными инструментами; generic `api_request` сознательно не выводим
+  (`docs/03-tools-spec.md` §7).
 
 ## Как писать код
 
@@ -136,10 +137,11 @@ python -m mcp_testops                          # stdio MCP, читает TESTOPS
   `/api/admin*`, `/api/email-verification*`, `/api/invite*`, `/api/login/invite-personal`,
   `/api/integration*` (в интеграциях лежат секреты) и для удаления проекта. Список — по фактическим
   путям снимка: `/api/registration` там нет, регистрация — `POST /api/register`.
-- Оставлять `api_request` без ограничений: он не должен пропускать `DELETE /api/project/...` и пути вне
-  `/api/`. Список запрещённых префиксов — в `docs/03-tools-spec.md`, последний раздел.
-- Расширять `api_request` до «загрузить файл»: для вложений и архивов есть отдельные эндпоинты, а
-  multipart через JSON-строку не собрать.
+- Возвращать generic-инструмент «любой путь под `/api`» (`api_request`) — ни за флагом, ни «только для
+  GET»: денилист уже пропустил регистрацию (`/api/register`). Чего не хватает — добавляй именованный
+  инструмент с телом из схемы, обоснование в `docs/03-tools-spec.md` §7.
+- Делать инструмент «загрузить файл»: multipart через JSON-строку не собрать — для вложений и архивов
+  нужен отдельный именованный инструмент.
 
 ## Как проверять
 

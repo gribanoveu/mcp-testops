@@ -380,6 +380,78 @@ def test_list_projects_sends_search_and_sort(api):
     assert seen["query"]["sort"] == "name,ASC"
 
 
+def test_list_statuses_reads_workflow_and_compacts(api):
+    seen = {}
+
+    def handler(request):
+        seen["path"] = request.url.path
+        seen["query"] = dict(request.url.params)
+        return httpx.Response(
+            200,
+            json={
+                "content": [{"id": 5, "name": "Draft", "color": "#ccc", "createdBy": "ivanov"}],
+                "totalElements": 1,
+                "totalPages": 1,
+                "number": 0,
+                "size": 50,
+            },
+        )
+
+    api(handler)
+    answer = json.loads(testops.list_statuses(workflow_id=2))
+    assert seen["path"] == "/api/status"
+    assert seen["query"]["workflowId"] == "2"
+    assert answer["content"] == [{"id": 5, "name": "Draft", "color": "#ccc"}]
+
+
+def test_list_reference_workflow_and_testlayer(api):
+    seen = []
+
+    def handler(request):
+        seen.append(request.url.path)
+        return httpx.Response(
+            200,
+            json={"content": [{"id": 2, "name": "Default", "createdBy": "ivanov"}],
+                  "totalElements": 1, "totalPages": 1, "number": 0, "size": 50},
+        )
+
+    api(handler)
+    assert json.loads(testops.list_reference("workflow"))["content"] == [{"id": 2, "name": "Default"}]
+    assert json.loads(testops.list_reference("testlayer"))["kind"] == "testlayer"
+    assert seen == ["/api/workflow", "/api/testlayer"]
+
+
+def test_list_reference_custom_field_is_project_scoped(api):
+    seen = {}
+
+    def handler(request):
+        seen["path"] = request.url.path
+        seen["query"] = dict(request.url.params)
+        return httpx.Response(
+            200,
+            json={"content": [{"id": 12, "name": "Severity", "locked": False}],
+                  "totalElements": 1, "totalPages": 1, "number": 0, "size": 50},
+        )
+
+    api(handler)
+    answer = json.loads(testops.list_reference("custom_field", project_id=65, query="Sev"))
+    assert seen["path"] == "/api/project/65/cf"
+    assert seen["query"]["query"] == "Sev"
+    assert answer["content"] == [{"id": 12, "name": "Severity"}]
+
+
+def test_list_reference_tag_is_flat_and_filtered_here(api):
+    api(lambda request: httpx.Response(200, json=[{"id": 3, "name": "smoke"}, {"id": 4, "name": "regress"}]))
+    answer = json.loads(testops.list_reference("tag", query="SMOKE"))
+    assert answer == {"ok": True, "kind": "tag", "content": [{"id": 3, "name": "smoke"}]}
+
+
+def test_list_reference_rejects_unknown_kind(api):
+    api(lambda request: pytest.fail("unknown kind must not reach the stand"))
+    answer = json.loads(testops.list_reference("status"))
+    assert answer == {"ok": False, "error": "kind must be one of workflow, testlayer, custom_field, tag"}
+
+
 def test_get_test_plan_keeps_selection(api):
     plan = {
         "id": 3,

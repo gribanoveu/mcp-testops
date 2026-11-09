@@ -7,7 +7,6 @@ A body that does not match the schema is the defect class this file exists for:
 import json
 import pathlib
 
-import httpx
 import pytest
 from jsonschema import Draft202012Validator
 
@@ -174,17 +173,3 @@ def test_run_test_cases_body_from_filter():
     body = testops._bulk_run_body(launch_name="Regress", project_id=65, filter_id=7)
     assert_valid("TestCaseBulkRunNewLaunchDto", body)
     assert body["selection"] == {"projectId": 65, "filterId": 7}
-
-
-def test_api_request_body_reaches_the_stand_unchanged(api):
-    seen = {}
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        seen["body"] = json.loads(request.content)
-        return httpx.Response(200, json={"id": 1})
-
-    api(handler)
-    payload = '{"name": "smoke", "projectId": 65}'
-    answer = json.loads(testops.api_request("POST", "/api/tag", body_json=payload))
-    assert answer == {"ok": True, "data": {"id": 1}}
-    assert seen["body"] == json.loads(payload)
