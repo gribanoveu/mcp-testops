@@ -52,7 +52,7 @@ Node 18+, Python не нужен: при первом запуске обёрт�
 npx -y @gribanoveu/mcp-testops          # без установки: скачает, запустит и закеширует
 npm install -g @gribanoveu/mcp-testops  # глобально: в PATH появляется команда mcp-testops
 mcp-testops                             # то же самое, без npx на каждый запуск
-npx -y @gribanoveu/mcp-testops@0.1.5    # закрепить версию — тем же способом обновляются
+npx -y @gribanoveu/mcp-testops@0.1.6    # закрепить версию — тем же способом обновляются
 ```
 
 Всё служебное обёртка пишет в stderr (в том числе строку о загрузке бинарника при первом запуске),
@@ -92,7 +92,7 @@ chmod +x mcp-testops-<platform>
 Нужен Python 3.10+. Колесо `py3-none-any` — одно на все платформы:
 
 ```bash
-pip install https://github.com/gribanoveu/mcp-testops/releases/download/v0.1.5/mcp_testops-0.1.5-py3-none-any.whl
+pip install https://github.com/gribanoveu/mcp-testops/releases/download/v0.1.6/mcp_testops-0.1.6-py3-none-any.whl
 python -m mcp_testops
 ```
 
@@ -104,7 +104,7 @@ pip install -e ".[test]" "mcp[cli]"             # mcp[cli] — mcp dev / mcp run
 python -m mcp_testops                          # stdio; без TESTOPS_TOKEN падает с понятным сообщением
 ```
 
-> Что уже опубликовано: npm — 0.1.5, в registry.npmjs.org. PyPI пока нет, поэтому `uvx mcp-testops` без
+> Что уже опубликовано: npm — 0.1.6, в registry.npmjs.org. PyPI пока нет, поэтому `uvx mcp-testops` без
 > `--from` ещё не работает: нужен проект `mcp-testops` и trusted publisher для
 > `.github/workflows/publish-pypi.yml`. Публикация в npm двухшаговая: workflow ставит версию в очередь
 > (`npm stage publish`), мейнтейнер с 2FA одобряет её (`npm stage approve <stage-id>`).
@@ -122,6 +122,16 @@ python -m mcp_testops                          # stdio; без TESTOPS_TOKEN п�
 | `TESTOPS_TIMEOUT` | нет | `60` | таймаут запроса, секунды |
 | `TESTOPS_READ_ONLY` | нет | `false` | `true` — регистрируются только read-инструменты (17 из 30) |
 | `MCP_SERVER_NAME` | нет | `testops` | имя сервера в клиенте |
+
+Флаги (`TESTOPS_VERIFY_SSL`, `TESTOPS_READ_ONLY`) принимают `1`, `true`, `yes`, `on` в любом регистре;
+остальное — «выключено». Токен уходит как `Authorization: Api-Token <token>`; если стенд отвечает `401`
+или `403`, попробуйте `Bearer`. HTTP-клиент (httpx) сам учитывает `HTTPS_PROXY`, `NO_PROXY` и
+`SSL_CERT_FILE`/`SSL_CERT_DIR` — последнее полезно, когда `TESTOPS_VERIFY_SSL=true` и стенд за
+внутренним CA.
+
+Через окружение не настраиваются: размер страницы (`50`, максимум `100`), ретраи (только чтения, 3 попытки
+на `429`/`500`/`502`/`503`/`504`, записи не повторяются) и формат лога (метод, путь, код, длительность —
+без заголовков и тел).
 
 ## Подключение в Cursor
 
