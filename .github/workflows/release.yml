@@ -112,18 +112,26 @@ jobs:
 
   npm:
     # `npx -y @gribanoveu/mcp-testops` needs the release assets, so this runs after them.
-    # Registry publishing must not fail the release: a wrong or missing token is reported by
-    # this job's status, while the binaries and the wheel stay downloadable.
+    #
+    # Trusted publishing over OIDC: no token secret at all, so nothing can expire or leak
+    # (the NPM_TOKEN that used to sit here started answering E401). npm exchanges the
+    # runner's identity for a short-lived credential, which is why this job asks for
+    # id-token: write. Registry problems stay visible in this job's status without
+    # failing the release itself.
     needs: [publish]
     if: always() && needs.publish.result == 'success'
     continue-on-error: true
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
+          # No registry-url on purpose: it writes an _authToken line into .npmrc and npm
+          # then takes the token path instead of falling through to OIDC.
           node-version: 24
-          registry-url: https://registry.npmjs.org
       - name: npm with staged publishing
         # `npm stage` lives in npm 12; node 24 images ship npm 11.
         run: npm install -g npm@12
@@ -131,24 +139,13 @@ jobs:
         run: |
           node -e "const p=require('./npm/package.json'); const v=process.env.GITHUB_REF_NAME.slice(1); if(p.version!==v){console.error('npm/package.json',p.version,'!= tag',v);process.exit(1)}"
       - name: Stage the package
-        # A stage-only token cannot publish directly (that is what npm answered: "Two-factor
-        # authentication or granular access token with bypass 2fa enabled is required").
-        # Staging defers 2FA to a maintainer: npm stage list -> npm stage approve <stage-id>.
-        if: env.NODE_AUTH_TOKEN != ''
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # The trusted publisher allows `npm stage publish` always, and staging defers 2FA to
+        # a maintainer: npm stage list -> npm stage approve <stage-id>.
         working-directory: npm
         run: npm stage publish --access public
-      - name: How to release the staged version
-        if: env.NODE_AUTH_TOKEN != ''
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Show the staged version
+        continue-on-error: true
         run: |
           echo "A maintainer approves the staged version (needs 2FA):"
           npm stage list @gribanoveu/mcp-testops
           echo "npm stage approve <stage-id>"
-      - name: Publish skipped
-        if: env.NODE_AUTH_TOKEN == ''
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: echo "NPM_TOKEN is not set - the npm package was not published"
