@@ -143,9 +143,9 @@ jobs:
         # a maintainer: npm stage list -> npm stage approve <stage-id>.
         working-directory: npm
         run: npm stage publish --access public
-      - name: Show the staged version
-        continue-on-error: true
+      - name: How to release the staged version
+        # `npm stage list` needs a user credential, and the OIDC token of this run cannot read
+        # the queue, so the id to approve is the one the previous step printed.
         run: |
-          echo "A maintainer approves the staged version (needs 2FA):"
-          npm stage list @gribanoveu/mcp-testops
-          echo "npm stage approve <stage-id>"
+          echo "Staged. A maintainer approves it with 2FA (npm 12, or npmjs.com -> the package -> Staged versions):"
+          echo "  npx npm@12 stage approve <stage-id>"
