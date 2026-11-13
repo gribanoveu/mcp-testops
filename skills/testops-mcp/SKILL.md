@@ -126,6 +126,9 @@ tree_selection_json='{"leafsInclude": [1001]}')`; правка — `update_test_
 - **Справочники**: `list_reference("workflow")`, `"testlayer"`, `"custom_field"`; теги —
   `list_reference("tag", query="smoke")`: словарь огромный (сотни тысяч), без `query` вернётся только его
   начало.
+- **Фильтры списков**: `list_projects(search=…)` сужает сервер (параметр `query` внутри); у запусков
+  `list_launches(search=…)` превращается в AQL, а сложное — `list_launches(rql='tag = "smoke" and
+  closed = true')`; у планов фильтра на сервере нет, `search` сужает только полученную страницу.
 
 - **`clear`** в `update_test_case`/`update_test_plan`: без него пустая строка означает «не менять поле»,
   с ним — «очистить».
