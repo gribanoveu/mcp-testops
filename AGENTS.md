@@ -26,9 +26,11 @@
 
 ```
 testops-mcp/
-├── README.md                 # README пакета: инструменты, настройка, ограничения, разработка
+├── README.md                 # README пакета: поставить, настроить, подключить; детали — в docs/07–09
 ├── CHANGELOG.md              # строка на этап: что сделано и когда
-├── docs/01-contract.md … 06-open-questions.md   # аналитика, остаётся на месте
+├── docs/01-contract.md … 09-development.md   # аналитика (01–06) и справочники (07–09), остаются на месте
+├── skills/testops-mcp/       # SKILL.md для агента и aql.md с референсом AQL
+├── npm/                      # обёртка npx и скилл внутри tarball (copy-skill.js на prepack)
 ├── openapi/                  # выборки из спеки: api-inventory.md, key-schemas.json (снимок — скриптом)
 ├── LICENSE                   # MIT
 ├── pyproject.toml            # hatchling; packages = ["src/mcp_testops"]; deps: mcp>=2,<3 (v2) или mcp>=1.0,<2 (v1), httpx>=0.27
