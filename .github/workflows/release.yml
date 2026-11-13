@@ -76,7 +76,15 @@ jobs:
           code=$?
           echo "$output"
           test "$code" -eq 1
-          test "$output" = "TESTOPS_TOKEN is not set"
+          # The hint grows with the variables it explains, so match its first line, not all of it.
+          case "$output" in
+            "TESTOPS_TOKEN is not set"*) ;;
+            *) echo "unexpected message without a token"; exit 1 ;;
+          esac
+          # And the CLI mode has to be inside the binary, not just in the module: `call` without
+          # arguments prints its usage before it ever looks at the token.
+          ./out/mcp-testops-${{ matrix.platform }}${{ matrix.exe }} call --help > /dev/null
+          test $? -eq 0
       - uses: actions/upload-artifact@v4
         with:
           name: bin-${{ matrix.platform }}
