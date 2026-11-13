@@ -59,6 +59,21 @@ def test_call_refuses_to_start_without_a_token():
     assert result.returncode == 1
     assert "TESTOPS_TOKEN is not set" in result.stderr
     # The hint has to be actionable: the agent reads it in a terminal and has to know what to set.
-    assert "export TESTOPS_TOKEN" in result.stderr
-    assert "TESTOPS_BASE_URL" in result.stderr
+    assert "TESTOPS_TOKEN" in result.stderr and "TESTOPS_BASE_URL" in result.stderr
     assert "Per command" in result.stderr
+
+
+def test_token_hint_speaks_the_shell_of_the_platform(monkeypatch):
+    """`export` is meaningless on Windows, so the hint must not be the only wording."""
+    from mcp_testops import config
+
+    monkeypatch.setattr(config.os, "name", "posix")
+    assert "export TESTOPS_TOKEN" in config.token_hint()
+    assert config.token_one_liner().startswith("Per command: TESTOPS_TOKEN=")
+
+    monkeypatch.setattr(config.os, "name", "nt")
+    windows = config.token_hint()
+    assert '$env:TESTOPS_TOKEN = "<api token>"' in windows
+    assert "set TESTOPS_TOKEN=" in windows
+    assert "export" not in windows
+    assert config.token_one_liner().startswith("Per command (PowerShell): $env:TESTOPS_TOKEN=")

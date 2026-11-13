@@ -169,12 +169,12 @@ body is built from the fields you pass only, and `clear=true` empties a string f
 The cheapest call is `list_projects(search="")`: `{"ok": true, "content": [...]}` means the token and the
 stand address are right. Then read the failure, because each one has a different fix:
 
-- `{"ok": false, "error": "TESTOPS_TOKEN is not set: ... export TESTOPS_TOKEN=<api token> ..."}` — the
-  server reads its own environment only, never your shell or a `.env` in the project. The token belongs in
-  the client's `env` block (or its config dialog); where the client supports it, write
-  `"TESTOPS_TOKEN": "${env:TESTOPS_TOKEN}"` and keep the value outside the repository. If the user has a
-  token somewhere already — `~/.kibo/mcp.json`, `~/.cursor/mcp.json`, `~/.claude.json`, a project
-  `.mcp.json`, `mcpServers.*.env` — it can be reused; do not print it and do not commit it.
+- `{"ok": false, "error": "TESTOPS_TOKEN is not set: ..."}` — the server reads its own environment
+  only, never your shell or a `.env` in the project. The token is the user's secret: ask them for it (TestOps,
+  user menu → API token) and tell them the four settings in the syntax of their shell — `export` on
+  macOS/Linux, `$env:` in PowerShell, `set` in cmd.exe. Do not go reading other applications' config files
+  looking for it, do not print it, do not write it into the repository. Where the client reads variables
+  from the shell, `"TESTOPS_TOKEN": "${env:TESTOPS_TOKEN}"` keeps the value outside the config file.
 - `401`/`403` — the token scheme or the access: the server sends `Api-Token`, the stand may want `Bearer`,
   and a project the token cannot see answers `403` too.
 - `{"ok": false, "error": "project_id is required (or set TESTOPS_PROJECT_ID)"}` — pass `project_id`, or add

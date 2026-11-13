@@ -61,24 +61,38 @@ TESTOPS_TOKEN is not set: the token goes to the stand as `Authorization: Api-Tok
 
 What to do, in order:
 
-1. **Look for a token the user already uses.** The MCP client keeps the very same one in its own config:
-   `~/.kibo/mcp.json`, `~/.cursor/mcp.json`, `~/.claude.json` or a project `.mcp.json`, under
-   `mcpServers.*.env`. Reading it to use in a command is fine — printing it, pasting it into the chat or
-   writing it into a file in the repository is not.
-2. **Otherwise ask the user** one short question: the stand address and an API token (TestOps → user menu
-   → API token). Never invent a token and never reuse a password.
-3. **Set it for the calls, not for the repository.** Many shell tools start a fresh shell per command, so
-   either prefix each call in the same command line:
+1. **Ask the user — do not go looking for the token.** Say plainly what is missing: "the CLI needs
+   `TESTOPS_TOKEN` — the API token from TestOps, user menu → API token — and optionally the stand
+   address". Never read other applications' config files hunting for a secret, never invent a value, never
+   reuse a password. If the user says a token is already configured somewhere, let them point at it.
+2. **Hand over the exact commands for their platform.** The syntax differs, and `export` is meaningless on
+   Windows:
+
+   | Shell | Command |
+   |---|---|
+   | macOS / Linux | `export TESTOPS_TOKEN=<api token>` |
+   | PowerShell | `$env:TESTOPS_TOKEN = "<api token>"` |
+   | cmd.exe | `set TESTOPS_TOKEN=<api token>` |
+
+   The optional ones are the same shape: `TESTOPS_BASE_URL` (default `https://testops.net`),
+   `TESTOPS_PROJECT_ID`, `TESTOPS_VERIFY_SSL=true`.
+3. **One command, one shell.** Many shell tools start a fresh shell per command, so an `export` does not
+   reach the next one. On macOS/Linux prefix the call itself; PowerShell has no inline prefix, so set the
+   variable and run in the same line:
 
    ```bash
    TESTOPS_TOKEN=… TESTOPS_BASE_URL=https://testops.net npx -y @gribanoveu/mcp-testops call list_projects '{}'
    ```
 
-   or `export` once inside a session you keep. Never put the token into the repository, a committed `.env`
-   or a note file.
-4. **Check that it works:** `… call list_projects '{"search": ""}'` → `{"ok": true, …}`. A `401`/`403`
+   ```powershell
+   $env:TESTOPS_TOKEN="…"; npx -y @gribanoveu/mcp-testops call list_projects '{}'
+   ```
+
+4. **Keep it out of the repository.** Not in code, not in a committed `.env`, not in a note file, not in
+   the chat log if you can avoid it: the user's shell profile or the client's own settings are for this.
+5. **Check that it works:** `… call list_projects '{"search": ""}'` → `{"ok": true, …}`. A `401`/`403`
    now carries its own hint: `Api-Token` versus `Bearer`, or this token has no access to the project.
-5. **Project id:** a tool called without `project_id` answers `project_id is required (or set
+6. **Project id:** a tool called without `project_id` answers `project_id is required (or set
    TESTOPS_PROJECT_ID)` — either pass it or add `TESTOPS_PROJECT_ID` next to the token.
 
 ## Recipes

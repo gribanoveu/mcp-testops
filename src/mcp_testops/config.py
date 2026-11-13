@@ -26,12 +26,33 @@ RETRY_BACKOFF = 0.5
 TEST_STATUSES = ("failed", "broken", "passed", "skipped", "unknown", "in_progress")
 REFERENCE_KINDS = ("workflow", "testlayer", "custom_field", "tag")
 
-# What to print when the token is missing: the same four lines serve the stdio server, where a
+# What to print when the token is missing: the same lines serve the stdio server, where a
 # client reads them in its log, and the CLI, where the user reads them in the terminal.
-TOKEN_HINT = (
-    "TESTOPS_TOKEN is not set: the token goes to the stand as `Authorization: Api-Token <token>`.\n"
-    "  export TESTOPS_TOKEN=<api token>            # from your TestOps profile; never commit it\n"
-    "  export TESTOPS_BASE_URL=https://testops.net  # optional, this is the default\n"
-    "  export TESTOPS_PROJECT_ID=<id>              # optional, for tools called without project_id\n"
-    "  export TESTOPS_VERIFY_SSL=true              # optional, on a stand with a valid certificate"
-)
+# The shell syntax is not the same everywhere — `export` means nothing to cmd.exe or PowerShell,
+# and those are the two shells most of the Windows users of this package have.
+def token_hint() -> str:
+    lines = [
+        "TESTOPS_TOKEN is not set: the token goes to the stand as `Authorization: Api-Token <token>`.",
+    ]
+    if os.name == "nt":
+        lines += [
+            '  $env:TESTOPS_TOKEN = "<api token>"                # PowerShell; never commit it',
+            "  set TESTOPS_TOKEN=<api token>                     # cmd.exe",
+            '  $env:TESTOPS_BASE_URL = "https://testops.net"     # optional, this is the default',
+            '  $env:TESTOPS_PROJECT_ID = "<id>"                  # optional, for tools called without project_id',
+        ]
+    else:
+        lines += [
+            "  export TESTOPS_TOKEN=<api token>                   # from your TestOps profile; never commit it",
+            "  export TESTOPS_BASE_URL=https://testops.net        # optional, this is the default",
+            "  export TESTOPS_PROJECT_ID=<id>                     # optional, for tools called without project_id",
+            "  export TESTOPS_VERIFY_SSL=true                     # optional, on a stand with a valid certificate",
+        ]
+    return "\n".join(lines)
+
+
+def token_one_liner() -> str:
+    """How to pass the token to one command, in the syntax of this platform's shell."""
+    if os.name == "nt":
+        return 'Per command (PowerShell): $env:TESTOPS_TOKEN="<api token>"; python -m mcp_testops call --list'
+    return "Per command: TESTOPS_TOKEN=<api token> python -m mcp_testops call --list"

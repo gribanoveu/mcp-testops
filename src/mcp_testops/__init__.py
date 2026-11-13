@@ -21,7 +21,7 @@ from .bodies import (
     _test_result_body,
 )
 from .client import TestOpsError, _api, _configure_logging, _http, _paged
-from .config import TOKEN, TOKEN_HINT
+from .config import TOKEN, token_hint
 from .server import mcp
 from .tools.launches import (
     add_test_result,
@@ -106,6 +106,6 @@ def main() -> None:
 
         raise SystemExit(run_call(sys.argv[2:]))
     if not TOKEN:
-        raise SystemExit(TOKEN_HINT)
+        raise SystemExit(token_hint())
     _configure_logging()
     mcp.run()
