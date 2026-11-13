@@ -269,8 +269,20 @@ scripts/refresh_spec.sh          # curl /api-docs/ в openapi/api-docs.json.new 
 (найти кейс → шаги → прогон → результаты), формы JSON-аргументов, чего инструменты не умеют и что
 делать, если ответ не тот. Рядом лежит `aql.md`: грамматика AQL, поля тест-кейсов, результатов и
 запусков, операторы, даты, подполя и готовые запросы — всё сверено с живым стендом. Скилл и референс
-написаны на английском, как и docstring инструментов. Положите каталог `skills/testops-mcp/` в папку
-скиллов клиента (Kibo, Claude Code) — он подхватит его по описанию из frontmatter.
+написаны на английском, как и docstring инструментов.
+
+Ставится одной командой через [Skills CLI](https://github.com/vercel-labs/skills) (Node 18+):
+
+```bash
+npx -y skills add gribanoveu/mcp-testops --skill testops-mcp      # в проект: .claude/skills/testops-mcp
+npx -y skills add gribanoveu/mcp-testops --skill testops-mcp -g   # в ~/.agents/skills, для всех проектов
+npx -y skills add gribanoveu/mcp-testops --list                   # что есть в репозитории, без установки
+```
+
+Ставится весь каталог скилла — `SKILL.md` и `aql.md`; `--agent` выбирает клиентов (если агенты не
+найдены, CLI спросит), `npx skills update` обновляет установленное. Руками — просто скопировать
+каталог `skills/testops-mcp/` в папку скиллов клиента (Kibo, Claude Code, Cursor). Готовый скилл
+лежит и в [каталоге Kibo](https://github.com/gribanoveu/kibo-agent-catalog) рядом с записью MCP-сервера.
 
 ## Структура
 

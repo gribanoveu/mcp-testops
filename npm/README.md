@@ -55,3 +55,14 @@ else counts as off. The token is sent as `Authorization: Api-Token <token>`; if 
 Not configurable from the environment: page size (50 by default, 100 at most), retries (read
 requests only, 3 attempts on 429/500/502/503/504, writes are never retried), and the log format
 (method, path, status, duration — no headers, no bodies).
+
+## Skill for an agent
+
+The server comes with a skill that teaches a model how to use it: the map of the 30 tools, the
+ready-made chains, the JSON argument shapes, the AQL reference (`aql.md` beside `SKILL.md` — fields of
+test cases, results and launches, operators, epoch dates, subfields). Install it with the Skills CLI:
+
+```bash
+npx -y skills add gribanoveu/mcp-testops --skill testops-mcp
+npx -y skills add gribanoveu/mcp-testops --skill testops-mcp -g   # for every project
+```
