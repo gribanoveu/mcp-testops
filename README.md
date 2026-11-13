@@ -52,7 +52,7 @@ Node 18+, Python не нужен: при первом запуске обёрт�
 npx -y @gribanoveu/mcp-testops          # без установки: скачает, запустит и закеширует
 npm install -g @gribanoveu/mcp-testops  # глобально: в PATH появляется команда mcp-testops
 mcp-testops                             # то же самое, без npx на каждый запуск
-npx -y @gribanoveu/mcp-testops@0.1.6    # закрепить версию — тем же способом обновляются
+npx -y @gribanoveu/mcp-testops@0.1.7    # закрепить версию — тем же способом обновляются
 ```
 
 Всё служебное обёртка пишет в stderr (в том числе строку о загрузке бинарника при первом запуске),
@@ -92,7 +92,7 @@ chmod +x mcp-testops-<platform>
 Нужен Python 3.10+. Колесо `py3-none-any` — одно на все платформы:
 
 ```bash
-pip install https://github.com/gribanoveu/mcp-testops/releases/download/v0.1.6/mcp_testops-0.1.6-py3-none-any.whl
+pip install https://github.com/gribanoveu/mcp-testops/releases/download/v0.1.7/mcp_testops-0.1.7-py3-none-any.whl
 python -m mcp_testops
 ```
 

@@ -40,13 +40,30 @@ description: How to work with Allure TestOps through the testops MCP server - fi
 
 ## 3. Рецепты
 
+### AQL: что стенд действительно принимает
+
+Грамматика — [docs.qameta.io/reference/aql](https://docs.qameta.io/reference/aql), сверено на живом
+стенде. Подстрока — только `~=`, и имена полей не совпадают с полями DTO:
+
+- `name ~= "логин"` — подстрока; `name = "Точное имя"`, `name != "x"`;
+- `tag = "smoke"`, `tag in ["smoke", "regress"]`, `not tag = "smoke"` — не `tag.name`;
+- `status = "Active"`, `workflow = "Default Manual"`, `layer = "API"` — не `status.name`/`testLayer`;
+- `automation = true`, `flaky = false`, `muted = true` — не `automated`;
+- `cf["Severity"] = "high"`, `cfv in ["high"]`, `role["Owner"] = "user1"`;
+- `id >= 100`, `createdDate > 1672531200000` — даты epoch-мс, без кавычек;
+- условия — `and` / `or` (у `and` приоритет выше), группировка — скобками.
+
+Неверный запрос — `400 invalid.aql`, `validate_aql` отвечает `{valid: false}`. Поэтому сначала
+`validate_aql`, потом `search_test_cases`.
+
 ### Найти кейс и прочитать его
 
 1. `search_test_cases(name="login")` — имя превращается в AQL `name ~= "login"` на сервере, клиентской
    фильтрации нет.
 2. Для сложного условия: `validate_aql(rql='tag = "smoke"')` → `{valid, count}`; если `valid`,
    тот же `rql` в `search_test_cases`.
-3. `get_test_case(id)` → тексты, статус, теги; `get_test_case_steps(id)` → дерево шагов.
+3. `get_test_case(id)` → тексты, статус, теги; `get_test_case_steps(id)` → дерево шагов
+   (у кейса без сценария — `steps: []`).
 
 ### Узнать, в каких прогонах гонялся кейс
 
@@ -104,7 +121,12 @@ tree_selection_json='{"leafsInclude": [1001]}')`; правка — `update_test_
   "name": "high"}]`.
 - **Пагинация**: `page` с 0, `size` по умолчанию 50 и не больше 100; в ответе `totalElements`,
   `totalPages`, `number` — по ним видно, что выборка не вся.
-- **Сортировка**: `sort="createdDate,DESC"`.
+- **Сортировка**: `sort="createdDate,DESC"` — одно поле, направление вторым; несколько полей стенд не
+  принимает (`400 unsupported sort field`).
+- **Справочники**: `list_reference("workflow")`, `"testlayer"`, `"custom_field"`; теги —
+  `list_reference("tag", query="smoke")`: словарь огромный (сотни тысяч), без `query` вернётся только его
+  начало.
+
 - **`clear`** в `update_test_case`/`update_test_plan`: без него пустая строка означает «не менять поле»,
   с ним — «очистить».
 
