@@ -30,7 +30,7 @@
 **PyPI пока нет:** `uvx mcp-testops` без `--from` не работает, пока у проекта не появится trusted
 publisher. Состояние публикации описано в `docs/08-limitations.md`.
 
-## Cursor
+## Примеры конфигов (Cursor и любой JSON с `mcpServers`)
 
 `~/.cursor/mcp.json` — для всех проектов, `<репозиторий>/.cursor/mcp.json` — для одного.
 
@@ -104,18 +104,28 @@ publisher. Состояние публикации описано в `docs/08-li
 - **Проверка:** перезагрузите конфиг MCP (Cursor: Customize → MCPs). В списке должно быть 30 инструментов
   (17 при `TESTOPS_READ_ONLY=true`) — значит сервер ответил на `initialize`.
 
-## Другие клиенты
+## Клиенты и форматы
 
-Любой клиент, который умеет запускать локальную команду по stdio, использует ту же пару
-`command`/`args` плюс свой `env`:
+Форматов по сути три: JSON-объект `mcpServers` (самый распространённый), собственный JSON с другим
+ключом у нескольких клиентов и TOML у Codex. Плюс CLI-команды, которые сами пишут нужный файл.
 
-- **Claude Desktop** — `claude_desktop_config.json` с тем же объектом `mcpServers` (без
-  `"type": "stdio"`);
-- **Claude Code** — `claude mcp add testops -e TESTOPS_TOKEN=... -e TESTOPS_BASE_URL=https://testops.net
-  -- npx -y @gribanoveu/mcp-testops`, ключ `-s user` для всех проектов или `-s project` в `.mcp.json`;
-- **Kibo Agent** — страница Catalog: записи «Allure TestOps» (MCP-сервер и скилл) из
-  [kibo-agent-catalog](https://github.com/gribanoveu/kibo-agent-catalog); значения `TESTOPS_*` он
-  спросит при установке и запишет в `~/.kibo/mcp.json`.
+| Клиент | Файл | Ключ и формат |
+|---|---|---|
+| Cursor | `~/.cursor/mcp.json`, `.cursor/mcp.json` | `mcpServers`, JSON |
+| Claude Desktop | `claude_desktop_config.json` | `mcpServers`, JSON |
+| Claude Code | `~/.claude.json`, `.mcp.json` | `mcpServers`, JSON; или `claude mcp add` |
+| Gemini CLI | `settings.json` | `mcpServers`, JSON |
+| Kiro | `.kiro/settings/mcp.json`, `~/.kiro/mcp.json` | `mcpServers`, JSON |
+| Kibo Agent | `~/.kibo/mcp.json` | `mcpServers`, JSON (или страница Catalog) |
+| Trae, Devin CLI, Factory Droid | свои `mcp.json` | `mcpServers`, JSON |
+| VS Code (Copilot) | `.vscode/mcp.json` | `servers` (не `mcpServers`), `type` обязателен, секреты в `inputs` |
+| Zed | `.zed/settings.json` | `context_servers`, внутри `command: {path, args, env}` |
+| Codex CLI | `~/.codex/config.toml` | TOML, таблица `[mcp_servers.testops]` |
+| OpenCode | `opencode.json` | ключ `mcp`, `type: "local"`, `command` массивом |
+
+Подробные примеры для Cursor, VS Code, Claude Code и Claude Desktop — выше в этом файле и в README.
+Все они запускают одну и ту же команду (`npx -y @gribanoveu/mcp-testops`, бинарник или
+`python -m mcp_testops`) и передают `TESTOPS_*` в `env`.
 
 ## Скилл
 

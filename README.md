@@ -40,9 +40,12 @@ pip install https://github.com/gribanoveu/mcp-testops/releases/download/v0.1.9/m
 `Authorization: Api-Token <token>`; при `401`/`403` попробуйте `Bearer`. Остальное — прокси, CA,
 ретраи, логи, почему TLS по умолчанию выключен — [docs/08-limitations.md](docs/08-limitations.md).
 
-## Подключение в Cursor
+## Подключение
 
-`~/.cursor/mcp.json` (глобально) или `<репозиторий>/.cursor/mcp.json` (для проекта):
+Один JSON-объект `mcpServers` с `command`/`args`/`env` понимают почти все клиенты: Cursor
+(`~/.cursor/mcp.json` или `.cursor/mcp.json`), Claude Desktop (`claude_desktop_config.json`),
+Claude Code (`.mcp.json`), Gemini CLI (`settings.json`), Kiro (`.kiro/settings/mcp.json`), Kibo Agent
+(`~/.kibo/mcp.json`), Trae, Devin CLI, Factory Droid. Содержимое у всех одно:
 
 ```json
 {
@@ -61,13 +64,11 @@ pip install https://github.com/gribanoveu/mcp-testops/releases/download/v0.1.9/m
 }
 ```
 
-- токен в репозитории не храните: в `mcp.json` пишите `"${env:TESTOPS_TOKEN}"`, Cursor подставит
-  переменную окружения, а в git секрет не попадёт;
+- токен в репозитории не храните: пишите `"${env:TESTOPS_TOKEN}"` — клиент подставит переменную
+  окружения, а в git секрет не попадёт;
 - сервер видит **только** этот блок `env` — переменные вашей оболочки до него не доходят;
-- после сохранения перезагрузите конфиг (Customize → MCPs): в списке должно быть 30 инструментов.
-
-Варианты с абсолютным путём к бинарнику, с Python-пакетом и другие клиенты —
-[docs/07-clients.md](docs/07-clients.md).
+- клиенты без строки `type` (Claude Desktop, Kiro) её просто игнорируют; `TESTOPS_READ_ONLY` — `true`,
+  если нужен доступ без записи.
 
 ### Claude Code
 
@@ -76,9 +77,40 @@ claude mcp add testops -e TESTOPS_TOKEN=... -e TESTOPS_BASE_URL=https://testops.
   -- npx -y @gribanoveu/mcp-testops
 ```
 
-`-s user` — для всех проектов (`~/.claude.json`), `-s project` — в `.mcp.json` проекта. Проверить —
-`claude mcp list`. В Claude Desktop другой формат: `claude_desktop_config.json` с тем же объектом
-`mcpServers` (только без `"type": "stdio"`), пример — в [docs/07-clients.md](docs/07-clients.md).
+`-s user` — для всех проектов (`~/.claude.json`), `-s project` — в `.mcp.json` проекта; проверить —
+`claude mcp list`.
+
+### VS Code (GitHub Copilot)
+
+Ключ другой — `servers` вместо `mcpServers`, и `type` обязателен. Файл `.vscode/mcp.json` (или
+пользовательский профиль); секреты можно вынести в `inputs`:
+
+```json
+{
+  "servers": {
+    "testops": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@gribanoveu/mcp-testops"],
+      "env": { "TESTOPS_BASE_URL": "https://testops.net", "TESTOPS_TOKEN": "${input:testops-token}" }
+    }
+  },
+  "inputs": [{ "id": "testops-token", "type": "promptString", "description": "TestOps API token", "password": true }]
+}
+```
+
+### Остальные форматы
+
+- **Zed** — `.zed/settings.json`, ключ `context_servers` (внутри `command: {path, args, env}`).
+- **Codex CLI** — TOML в `~/.codex/config.toml`, таблица `[mcp_servers.testops]` с `command`, `args`,
+  `env`.
+- **OpenCode** — `opencode.json`, ключ `mcp` с `type: "local"` и массивом `command`.
+- **Транспорты** бывают два: stdio (`command`/`args`, как здесь) и Streamable HTTP (`url`/`headers`,
+  SSE — устаревший). Этот сервер работает только по stdio: портов не слушает и никуда не ходит, кроме
+  стенда `TESTOPS_BASE_URL`.
+
+Варианты с абсолютным путём к бинарнику и с Python-пакетом, а также полный список клиентов —
+[docs/07-clients.md](docs/07-clients.md).
 
 ## Скилл для агента
 
