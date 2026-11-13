@@ -52,7 +52,7 @@ Node 18+, Python не нужен: при первом запуске обёрт�
 npx -y @gribanoveu/mcp-testops          # без установки: скачает, запустит и закеширует
 npm install -g @gribanoveu/mcp-testops  # глобально: в PATH появляется команда mcp-testops
 mcp-testops                             # то же самое, без npx на каждый запуск
-npx -y @gribanoveu/mcp-testops@0.1.7    # закрепить версию — тем же способом обновляются
+npx -y @gribanoveu/mcp-testops@0.1.8    # закрепить версию — тем же способом обновляются
 ```
 
 Всё служебное обёртка пишет в stderr (в том числе строку о загрузке бинарника при первом запуске),
@@ -92,7 +92,7 @@ chmod +x mcp-testops-<platform>
 Нужен Python 3.10+. Колесо `py3-none-any` — одно на все платформы:
 
 ```bash
-pip install https://github.com/gribanoveu/mcp-testops/releases/download/v0.1.7/mcp_testops-0.1.7-py3-none-any.whl
+pip install https://github.com/gribanoveu/mcp-testops/releases/download/v0.1.8/mcp_testops-0.1.8-py3-none-any.whl
 python -m mcp_testops
 ```
 
@@ -104,9 +104,9 @@ pip install -e ".[test]" "mcp[cli]"             # mcp[cli] — mcp dev / mcp run
 python -m mcp_testops                          # stdio; без TESTOPS_TOKEN падает с понятным сообщением
 ```
 
-> npm: 0.1.5 в registry.npmjs.org; 0.1.6 встала в очередь после того, как репозиторий перешёл на trusted
-> publishing (OIDC, без токена в секретах). Публикация двухшаговая: workflow ставит версию в очередь
-> (`npm stage publish`), мейнтейнер с 2FA одобряет — `npm stage approve <stage-id>` или на npmjs.com.
+> npm: 0.1.6 в registry.npmjs.org, 0.1.8 — в очереди (trusted publishing по OIDC, без токена в
+> секретах). Публикация двухшаговая: workflow ставит версию в очередь (`npm stage publish`), мейнтейнер
+> с 2FA одобряет — `npm stage approve <stage-id>` или на npmjs.com.
 > PyPI пока нет, поэтому `uvx mcp-testops` без `--from` ещё не работает: нужен проект `mcp-testops` и
 > trusted publisher для `.github/workflows/publish-pypi.yml`.
 
