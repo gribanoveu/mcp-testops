@@ -38,11 +38,14 @@ def list_test_cases(
     size: int = DEFAULT_PAGE_SIZE,
     sort: str = "",
 ) -> str:
-    """List test cases of a project as rows: id, name, status, automated, flaky, testLayer.
+    """List test cases of a project as rows: id, name, status, automated.
 
-    Rows carry no description and no steps - read one case with get_test_case and its
-    steps with get_test_case_steps. project_id defaults to TESTOPS_PROJECT_ID.
-    sort: "property,ASC|DESC", e.g. "createdDate,DESC".
+    A row carries only what the stand puts there - on a 2026 stand that is id, name, status,
+    automated; testLayer and flaky appear when the row has them. Rows carry no description
+    and no steps: read one case with get_test_case and its steps with get_test_case_steps.
+    Deleted cases are not listed; search_test_cases(deleted=true) shows the bin.
+    project_id defaults to TESTOPS_PROJECT_ID. sort: "property,ASC|DESC", e.g.
+    "createdDate,DESC"; the stand takes one field only.
     """
     pid = _pid(project_id)
     res = _paged("/api/testcase", {"projectId": pid}, page=page, size=size, sort=sort)
@@ -56,10 +59,11 @@ def list_test_cases(
 @mcp.tool()
 @_guard
 def get_test_case(test_case_id: int) -> str:
-    """Get one test case by id: texts, status, workflow, testLayer, tags, links.
+    """Get one test case by id: texts, status, workflow, testLayer, tags, links, flags.
 
-    The answer does NOT contain the scenario/steps (TestCaseDto has none) and says so
-    with "steps_not_included": true - read them with get_test_case_steps.
+    Flags are automated, flaky, deleted and duration. The answer does NOT contain the
+    scenario/steps (TestCaseDto has none) and says so with "steps_not_included": true -
+    read them with get_test_case_steps.
     """
     data = _api("GET", f"/api/testcase/{test_case_id}")
     return {"ok": True, **_pick(data, TEST_CASE_KEYS), "steps_not_included": True}
@@ -71,14 +75,34 @@ def _scenario_roots(by_id: dict) -> list[dict]:
     return [step for key, step in by_id.items() if key not in child_ids]
 
 
-def _step_node(step: dict, by_id: dict, seen: frozenset = frozenset()) -> dict:
+def _step_node(step: dict, by_id: dict, seen: frozenset = frozenset(), shared=None) -> dict:
     node = _pick(step, ("id", "body", "expectedResult", "attachmentId", "sharedStepId"))
     children = []
     for child_id in step.get("children") or []:
         child = by_id.get(str(child_id))
         if child and child_id not in seen:
-            children.append(_step_node(child, by_id, seen | {child_id}))
+            children.append(_step_node(child, by_id, seen | {child_id}, shared))
     node["children"] = children
+    if node.get("sharedStepId") and shared:
+        # Without this the step is an id with no content: the stand keeps the shared step
+        # and its own steps in two maps beside the scenario.
+        node["sharedStep"] = _shared_node(node["sharedStepId"], shared)
+    return node
+
+
+def _shared_node(shared_id, shared, seen: frozenset = frozenset()) -> dict:
+    """A shared step with its own steps resolved, so the tree reads without a second call."""
+    by_id, steps_by_id = shared
+    key = str(shared_id)
+    shared_step = by_id.get(key) or {}
+    node = {"id": shared_step.get("id", shared_id), "name": shared_step.get("body") or shared_step.get("name")}
+    steps = []
+    for child_id in shared_step.get("children") or []:
+        child = steps_by_id.get(str(child_id))
+        if child and str(child_id) not in seen:
+            steps.append(_step_node(child, steps_by_id, seen | {str(child_id)}, shared))
+    if steps:
+        node["steps"] = steps
     return node
 
 
@@ -89,12 +113,20 @@ def get_test_case_steps(test_case_id: int, as_tree: bool = True) -> str:
 
     as_tree=true (default) returns nested steps: {id, body, expectedResult, attachmentId,
     sharedStepId, children}. as_tree=false returns the raw scenarioSteps map by id.
-    A shared step appears as a node with sharedStepId only - its own steps are not inlined.
-    Attachment contents are not inlined either.
+    A case without a scenario answers "steps": [].
+    A shared step appears as a node with sharedStepId plus a "sharedStep" object: {id, name,
+    steps} with its own steps resolved. Attachment contents are not inlined either - only
+    attachmentId.
     """
     data = _api("GET", f"/api/testcase/{test_case_id}/step")
+    shared_by_id = data.get("sharedSteps") or {}
+    shared = (shared_by_id, data.get("sharedStepScenarioSteps") or {}) if shared_by_id else None
     if not as_tree:
-        return {"ok": True, "testCaseId": test_case_id, "scenarioSteps": data.get("scenarioSteps") or {}}
+        answer = {"ok": True, "testCaseId": test_case_id, "scenarioSteps": data.get("scenarioSteps") or {}}
+        if shared:
+            answer["sharedSteps"] = shared_by_id
+            answer["sharedStepScenarioSteps"] = shared[1]
+        return answer
     by_id = data.get("scenarioSteps") or {}
     root = data.get("root") or {}
     if isinstance(root, int):
@@ -110,15 +142,15 @@ def get_test_case_steps(test_case_id: int, as_tree: bool = True) -> str:
         # walking that would invent one step with every field null.
         steps = []
     elif root_is_step:
-        steps = [_step_node(root, by_id)]
+        steps = [_step_node(root, by_id, shared=shared)]
     elif root.get("children"):
         steps = [
-            _step_node(by_id[str(child)], by_id, frozenset({str(child)}))
+            _step_node(by_id[str(child)], by_id, frozenset({str(child)}), shared)
             for child in root["children"]
             if str(child) in by_id
         ]
     else:
-        steps = [_step_node(step, by_id, frozenset({str(step.get("id"))})) for step in _scenario_roots(by_id)]
+        steps = [_step_node(step, by_id, frozenset({str(step.get("id"))}), shared) for step in _scenario_roots(by_id)]
     return {"ok": True, "testCaseId": test_case_id, "steps": steps}
 
 

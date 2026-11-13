@@ -86,8 +86,9 @@ description: How to work with Allure TestOps through the testops MCP server - fi
 
 1. `create_launch(name="Ручной прогон", project_id=…)` → `id`.
 2. `add_test_result(launch_id=…, name="Login smoke", status="failed", message="…", duration=1300,
-   test_case_id=…)` — `status` только из `failed | broken | passed | skipped | unknown | in_progress`,
-   иначе ошибка без запроса. `duration`, `start`, `stop` — миллисекунды.
+   test_case_id=…)` — `test_case_id` обязателен (без него стенд отвечает 500), `status` только из
+   `failed | broken | passed | skipped | unknown | in_progress`, иначе ошибка без запроса. `duration`,
+   `start`, `stop` — миллисекунды.
 3. `close_launch(launch_id=…)` — после закрытия результаты только читаются. Передумали —
    `reopen_launch(launch_id=…)`.
 

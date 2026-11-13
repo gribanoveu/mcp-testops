@@ -151,7 +151,7 @@ def test_list_test_plans_filters_the_page_itself(api):
 
 def test_add_test_result_rejects_status_without_a_request(api):
     api(lambda request: pytest.fail("invalid status must not reach the stand"))
-    answer = json.loads(testops.add_test_result(launch_id=10, name="x", status="ok"))
+    answer = json.loads(testops.add_test_result(launch_id=10, name="x", status="ok", test_case_id=42))
     assert answer["ok"] is False
     assert answer["error"].startswith("status must be one of")
 
@@ -258,6 +258,36 @@ def test_get_test_case_steps_raw_form(api):
     api(lambda request: httpx.Response(200, json=scenario))
     answer = json.loads(testops.get_test_case_steps(42, as_tree=False))
     assert answer == {"ok": True, "testCaseId": 42, "scenarioSteps": scenario["scenarioSteps"]}
+
+
+def test_get_test_case_steps_resolves_shared_steps(api):
+    """A step that points at a shared step must carry its text, not just the id."""
+    payload = {
+        "root": {"children": [1]},
+        "scenarioSteps": {"1": {"id": 1, "sharedStepId": 77, "children": []}},
+        "sharedSteps": {"77": {"id": 77, "body": "Login as user", "children": [501, 502]}},
+        "sharedStepScenarioSteps": {
+            "501": {"id": 501, "body": "Open the form", "children": []},
+            "502": {"id": 502, "body": "Fill the login", "children": []},
+        },
+    }
+    api(lambda request: httpx.Response(200, json=payload))
+    answer = json.loads(testops.get_test_case_steps(42))
+    assert answer["steps"] == [
+        {
+            "id": 1,
+            "sharedStepId": 77,
+            "children": [],
+            "sharedStep": {
+                "id": 77,
+                "name": "Login as user",
+                "steps": [
+                    {"id": 501, "body": "Open the form", "children": []},
+                    {"id": 502, "body": "Fill the login", "children": []},
+                ],
+            },
+        }
+    ]
 
 
 def test_get_test_case_steps_of_empty_scenario_is_empty(api):
@@ -452,6 +482,8 @@ def test_get_test_result_strips_html(api):
                 "launchId": 4,
                 "testCaseId": 42,
                 "duration": 100,
+                "hidden": False,
+                "parameters": [{"name": "os", "value": "linux"}],
             },
         )
     )
@@ -467,6 +499,10 @@ def test_get_test_result_strips_html(api):
         "launchId": 4,
         "testCaseId": 42,
         "duration": 100,
+        # hidden and parameters matter: a retry is not a second run, and a parameterized
+        # row is only told apart from its sibling by its parameters.
+        "hidden": False,
+        "parameters": [{"name": "os", "value": "linux"}],
     }
 
 
@@ -690,7 +726,8 @@ def test_list_reference_custom_field_is_project_scoped(api):
         seen["query"] = dict(request.url.params)
         return httpx.Response(
             200,
-            json={"content": [{"id": 12, "name": "Severity", "locked": False}],
+            json={"content": [{"id": 12, "name": "Severity", "locked": False, "required": True,
+                             "singleSelect": True, "projectId": 65}],
                   "totalElements": 1, "totalPages": 1, "number": 0, "size": 50},
         )
 
@@ -698,7 +735,8 @@ def test_list_reference_custom_field_is_project_scoped(api):
     answer = json.loads(testops.list_reference("custom_field", project_id=65, query="Sev"))
     assert seen["path"] == "/api/project/65/cf"
     assert seen["query"]["query"] == "Sev"
-    assert answer["content"] == [{"id": 12, "name": "Severity"}]
+    # required tells the model a value must be sent, singleSelect that it is one of a list.
+    assert answer["content"] == [{"id": 12, "name": "Severity", "required": True, "singleSelect": True}]
 
 
 def test_list_reference_tag_asks_the_server_to_filter(api):

@@ -37,7 +37,9 @@ def list_reference(
 
     Returns id and name of every entry - they are what create_test_case wants in
     workflow_id, test_layer_id and custom_fields_json.
-    custom_field is project scoped (project_id defaults to TESTOPS_PROJECT_ID) and takes query.
+    custom_field is project scoped (project_id defaults to TESTOPS_PROJECT_ID) and takes query;
+    each custom field also carries required and singleSelect, which is what decides whether a
+    value must be given and whether it is one of a list.
     tag is filtered and paged on the server: the full dictionary is hundreds of thousands of
     entries, so pass query (a piece of the tag name) to get the ones you need.
     """
@@ -56,5 +58,6 @@ def list_reference(
     else:
         path, params = f"/api/project/{_pid(project_id)}/cf", {"query": query or None}
     res = _paged(path, params, page=page, size=size)
-    res["content"] = [_pick(item, ("id", "name")) for item in res["content"]]
+    keys = ("id", "name", "required", "singleSelect") if kind == "custom_field" else ("id", "name")
+    res["content"] = [_pick(item, keys) for item in res["content"]]
     return {"ok": True, "kind": kind, **res}

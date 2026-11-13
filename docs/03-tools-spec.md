@@ -245,7 +245,7 @@ message, trace, start, stop}`.
 `DELETE /api/launch/{launch_id}` → `204`; возвращаем `{ok, accepted, launchId}`. Docstring: удаляются и все
 результаты прогона.
 
-### `add_test_result(launch_id: int, name: str, status: str, test_case_id: int = None, duration: int = None,
+### `add_test_result(launch_id: int, name: str, status: str, test_case_id: int, duration: int = None,
 message: str = None, trace: str = None, start: int = None, stop: int = None, description=None,
 precondition=None, postcondition=None, expected_result=None, tags_json=None, links_json=None,
 custom_fields_json=None) -> str`
@@ -254,6 +254,10 @@ custom_fields_json=None) -> str`
 `status` — `TestStatus` (`failed|broken|passed|skipped|unknown|in_progress`); валидируем **до** запроса и
 возвращаем понятную ошибку со списком допустимых значений. `duration`, `start`, `stop` — миллисекунды
 (int64).
+
+**Проверено на стенде (13.11.2026):** `testCaseId` обязателен, хотя схема его не требует — без него
+стенд отвечает `500 An unexpected error occurred`. Поэтому `test_case_id` в сигнатуре без значения по
+умолчанию: модель обязана указать кейс. С ним и без него прогнано по одному разу на одном запуске.
 
 ### `run_test_cases(launch_name: str, project_id=None, leafs_include: str = "", ids: str = "",
 filter_id: int = None, assignees: str = "", tags_json=None, release_id: int = None) -> str`

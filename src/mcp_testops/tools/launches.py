@@ -96,11 +96,20 @@ def list_test_results(
 ) -> str:
     """List results of a launch: id, name, testCaseId, status, duration, message, trace, start, stop.
 
-    status is one of failed, broken, passed, skipped, unknown, in_progress.
+    status is one of failed, broken, passed, skipped, unknown, in_progress. message and trace
+    are the failure text and the stack, when the run produced them - so a failed result is
+    readable without a second call. hidden marks a result that is a retry or was hidden by a
+    user; the API keeps those in the launch, so check the flag before counting.
+    parameters carries the values of a parameterized run, empty otherwise - it is what tells
+    two rows with the same name apart.
     """
     res = _paged("/api/testresult", {"launchId": launch_id}, page=page, size=size, sort=sort)
     res["content"] = [
-        _pick(item, ("id", "name", "testCaseId", "status", "duration", "message", "trace", "start", "stop"))
+        _pick(
+            item,
+            ("id", "name", "testCaseId", "status", "duration", "message", "trace",
+             "start", "stop", "hidden", "parameters"),
+        )
         for item in res["content"]
     ]
     return {"ok": True, "launchId": launch_id, **res}
@@ -129,6 +138,8 @@ TEST_RESULT_KEYS = (
     "testedBy",
     "manual",
     "flaky",
+    "hidden",
+    "parameters",
     "createdDate",
     "lastModifiedDate",
 )
@@ -139,8 +150,9 @@ TEST_RESULT_KEYS = (
 def get_test_result(test_result_id: int) -> str:
     """Get one test result: status, duration, message, trace and the text fields.
 
-    The *Html duplicates are dropped. For the small table of a whole launch use
-    list_test_results or get_launch_statistic.
+    hidden marks a retry or a result hidden by a user; parameters holds the values of a
+    parameterized run. The *Html duplicates are dropped. For the small table of a whole
+    launch use list_test_results or get_launch_statistic.
     """
     data = _api("GET", f"/api/testresult/{test_result_id}")
     return {"ok": True, **_pick(data, TEST_RESULT_KEYS)}
@@ -199,7 +211,7 @@ def add_test_result(
     launch_id: int,
     name: str,
     status: str,
-    test_case_id: int | None = None,
+    test_case_id: int,
     duration: int | None = None,
     message: str = "",
     trace: str = "",
@@ -217,7 +229,8 @@ def add_test_result(
 
     status must be one of failed, broken, passed, skipped, unknown, in_progress; any
     other value fails here, without a request. duration, start and stop are milliseconds
-    (int64). test_case_id links the result to a test case.
+    (int64). test_case_id is required: it is the case the result belongs to, and the stand
+    answers 500 for a manual result without one.
     JSON-string arguments:
       tags_json          [{"id": 3, "name": "smoke"}]
       links_json         [{"name": "JIRA", "type": "issue", "url": "https://jira/browse/ABC-1"}]
