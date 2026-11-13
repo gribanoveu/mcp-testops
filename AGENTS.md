@@ -29,7 +29,8 @@ testops-mcp/
 ├── README.md                 # README пакета: поставить, настроить, подключить; детали — в docs/07–09
 ├── CHANGELOG.md              # строка на этап: что сделано и когда
 ├── docs/01-contract.md … 09-development.md   # аналитика (01–06) и справочники (07–09), остаются на месте
-├── skills/testops-mcp/       # SKILL.md для агента и aql.md с референсом AQL
+├── skills/testops-mcp/       # скилл для MCP-сервера: SKILL.md + aql.md
+├── skills/testops-cli/       # тот же домен командами CLI: SKILL.md + aql.md
 ├── npm/                      # обёртка npx и скилл внутри tarball (copy-skill.js на prepack)
 ├── openapi/                  # выборки из спеки: api-inventory.md, key-schemas.json (снимок — скриптом)
 ├── LICENSE                   # MIT
@@ -47,6 +48,7 @@ testops-mcp/
     ├── helpers.py            # _guard, _pid, _json_arg, _ids, _answer, _pick, _statistic
     ├── bodies.py             # тела запросов — чистые функции для контрактных тестов
     ├── server.py             # mcp = MCPServer(...) и _write (read-only)
+    ├── cli.py                # python -m mcp_testops call … (один вызов из терминала)
     └── tools/                # по модулю на домен, одна функция = один инструмент
         ├── projects.py
         ├── cases.py

@@ -24,25 +24,36 @@ function fail(message) {
 }
 
 function installSkill(args) {
-  const source = join(__dirname, "skills", "testops-mcp");
-  let target = join(".agents", "skills", "testops-mcp");
+  let name = "testops-mcp";
+  let target = join(".agents", "skills");
+  const skills = readdirSync(join(__dirname, "skills")).filter((entry) =>
+    existsSync(join(__dirname, "skills", entry, "SKILL.md")),
+  );
   for (let i = 0; i < args.length; i += 1) {
-    if (args[i] === "-g" || args[i] === "--global") target = join(homedir(), ".agents", "skills", "testops-mcp");
-    else if (args[i] === "--dir") target = join(args[i += 1] || ".", "testops-mcp");
-    else if (args[i] === "-h" || args[i] === "--help") {
+    const value = args[i];
+    if (value === "-g" || value === "--global") target = join(homedir(), ".agents", "skills");
+    else if (value === "--dir") target = args[i += 1] || ".";
+    else if (value === "--all") name = "*";
+    else if (value === "-h" || value === "--help") {
       process.stdout.write(
-        "Usage: mcp-testops skill [--dir <folder>] [-g]\n\n" +
-          "Copies SKILL.md and aql.md into <folder>/testops-mcp (default .agents/skills,\n" +
-          "-g for ~/.agents/skills).\n",
+        "Usage: mcp-testops skill [name] [--all] [--dir <folder>] [-g]\n\n" +
+          `Skills in this package: ${skills.join(", ")}\n` +
+          "Copies into <folder>/<name> (default .agents/skills, -g for ~/.agents/skills).\n" +
+          "testops-mcp is the MCP skill, testops-cli drives the CLI instead of a server.\n",
       );
       process.exit(0);
-    } else fail(`unknown option ${args[i]}`);
+    } else if (value.startsWith("-")) fail(`unknown option ${value}`);
+    else name = value;
   }
-  if (!existsSync(join(source, "SKILL.md"))) fail(`this package carries no skill at ${source}`);
-  mkdirSync(target, { recursive: true });
-  const files = readdirSync(source).filter((name) => name.endsWith(".md"));
-  for (const name of files) copyFileSync(join(source, name), join(target, name));
-  process.stderr.write(`mcp-testops: skill -> ${target} (${files.join(", ")})\n`);
+  const chosen = name === "*" ? skills : [name];
+  for (const one of chosen) {
+    const source = join(__dirname, "skills", one);
+    if (!existsSync(join(source, "SKILL.md"))) fail(`no skill ${one}; this package has ${skills.join(", ")}`);
+    mkdirSync(join(target, one), { recursive: true });
+    const files = readdirSync(source).filter((file) => file.endsWith(".md"));
+    for (const file of files) copyFileSync(join(source, file), join(target, one, file));
+    process.stderr.write(`mcp-testops: skill ${one} -> ${join(target, one)} (${files.join(", ")})\n`);
+  }
   process.exit(0);
 }
 

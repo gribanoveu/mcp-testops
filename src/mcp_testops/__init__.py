@@ -5,8 +5,11 @@ from ``TESTOPS_*`` environment variables (see README).
 
 Layout: ``config`` reads the environment, ``client`` talks to the stand,
 ``helpers`` and ``bodies`` hold the shared pieces, ``server`` owns the
-``MCPServer`` object, ``tools`` registers one function per tool.
+``MCPServer`` object, ``tools`` registers one function per tool, ``cli`` runs a single
+tool from the shell (``python -m mcp_testops call ...``).
 """
+
+import sys
 
 from .bodies import (
     _bulk_run_body,
@@ -93,7 +96,15 @@ __all__ = [
 
 
 def main() -> None:
-    """Run the stdio server; refuses to start without a token."""
+    """Run the stdio server; refuses to start without a token.
+
+    With a leading ``call`` it becomes a one-shot CLI (see ``cli``): ``python -m mcp_testops
+    call list_projects '{"search": "login"}'``.
+    """
+    if len(sys.argv) > 1 and sys.argv[1] == "call":
+        from .cli import run_call
+
+        raise SystemExit(run_call(sys.argv[2:]))
     if not TOKEN:
         raise SystemExit("TESTOPS_TOKEN is not set")
     _configure_logging()

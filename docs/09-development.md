@@ -86,15 +86,16 @@ testops-mcp/
 │   ├── helpers.py        # guard, разбор аргументов, компактность ответа
 │   ├── bodies.py         # тела запросов — чистые функции для контрактных тестов
 │   ├── server.py         # mcp = MCPServer(...) и _write (read-only)
+│   ├── cli.py            # python -m mcp_testops call … (один вызов из терминала)
 │   └── tools/            # проекты, кейсы, планы, запуски, справочники
-├── tests/                # test_contract.py, test_client.py, test_tool_guards.py
+├── tests/                # test_contract.py, test_client.py, test_tool_guards.py, test_cli.py
 ├── scripts/refresh_spec.sh   # получить снимок спеки со стенда
-├── scripts/call.py           # вызвать любой инструмент из терминала
 ├── openapi/              # выборки из спеки: api-inventory.md, key-schemas.json
 ├── docs/                 # аналитика (01–06) и справочники (07–09)
 ├── packaging/entry.py    # точка входа для standalone-бинарника
-├── npm/                  # обёртка и скилл в npm-пакете
-├── skills/testops-mcp/   # SKILL.md для агента и aql.md с референсом AQL
+├── npm/                  # обёртка и оба скилла в npm-пакете
+├── skills/testops-mcp/   # скилл для MCP-сервера: SKILL.md + aql.md
+├── skills/testops-cli/   # тот же домен командами CLI: SKILL.md + aql.md
 ├── AGENTS.md             # правила работы над сервером
 ├── CHANGELOG.md          # что сделано, по этапам
 ├── README.md             # как поставить и подключить
@@ -103,29 +104,34 @@ testops-mcp/
 
 ## Вызов инструментов из терминала
 
-`scripts/call.py` поднимает сервер по stdio так же, как клиент, и печатает ответ инструмента — то,
-что увидит модель:
+`python -m mcp_testops call …` — штатная подкоманда (`cli.py`), не отдельный скрипт: она поднимает сервер
+по stdio так же, как клиент, делает один вызов и печатает ответ:
 
 ```bash
 export TESTOPS_TOKEN=... TESTOPS_BASE_URL=https://testops.net TESTOPS_PROJECT_ID=657
-python scripts/call.py --list                                  # 30 инструментов и первые строки docstring
-python scripts/call.py --schema list_launches                  # схема аргументов
-python scripts/call.py list_projects '{"search": "wowtax"}'     # вызов, аргументы — JSON-объект
+python -m mcp_testops call --list                                  # 30 инструментов + первая строка docstring
+python -m mcp_testops call --schema list_launches                  # схема аргументов
+python -m mcp_testops call list_projects '{"search": "wowtax"}'    # вызов, аргументы — JSON-объект
 ```
 
-Запускать из окружения пакета (`.venv/bin/python`) — скрипт импортирует SDK `mcp`. Код возврата — `0`,
-если инструмент ответил; `1` — когда ответ получен на уровне протокола как ошибка (например,
-пропущен обязательный аргумент) или аргументы не разбираются как JSON. Наш стиль «ошибки — данные» это
-не меняет: `{"ok": false, "error": "HTTP 403 ..."}` — это ответ, и код возврата `0`, разбирать надо
-поле `error`.
+Та же команда через npm-обёртку — она передаёт аргументы бинарнику как есть, подкоманда ему знакома
+с 0.2.0: `npx -y @gribanoveu/mcp-testops call --list`. Для замороженного бинарника `_self_command()`
+поднимает его самого без `-m` — PyInstaller не понимает `-m mcp_testops`.
 
-Два подводных камня, из-за которых скрипт выглядит именно так:
+stdout — только ответ инструмента, логи идут в stderr, так что stdout можно пайпить в `jq`. Код
+возврата `0` — инструмент ответил (даже если внутри `{"ok": false, "error": …}`), `1` — ошибка
+уровня протокола (пропущен обязательный аргумент) или аргументы не JSON.
+
+Два подводных камня, которые видны в `cli.py`:
 
 - `anyio.run`, а не `asyncio.run`: stdio-транспорт SDK строит anyio task group, и под `asyncio.run` её
-  закрытие падает с `ExceptionGroup` уже после печати ответа (Python 3.14, anyio 4).
+  закрытие падает с `ExceptionGroup` уже после печати ответа (Python 3.14, anyio 4);
 - поля SDK — snake_case: `tool.input_schema`, `result.is_error` (не `inputSchema`/`isError`).
 
-Вместо скрипта можно и голым JSON-RPC — сервер читает stdin и пишет stdout:
+Тесты — `tests/test_cli.py`: они запускают подпроцесс так же, как это делает человек, и ни один из
+случаев не идёт в сеть.
+
+Голым JSON-RPC тоже можно — сервер читает stdin и пишет stdout:
 
 ```bash
 printf '%s\n' \
@@ -134,6 +140,16 @@ printf '%s\n' \
  '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
  | TESTOPS_TOKEN=dummy python -m mcp_testops
 ```
+
+## Два скилла: сервер или CLI
+
+- `skills/testops-mcp` — для тех, кто регистрирует MCP-сервер: рецепты вызовов инструментов.
+- `skills/testops-cli` — тот же домен, но командами `python -m mcp_testops call …` через shell, без
+  регистрации сервера. Плата за это: 30 описаний инструментов (29 143 символа в `tools/list`) не лежат
+  в контексте постоянно; цена — модель не видит схем и берёт имена аргументов из скилла.
+
+Оба ставит `mcp-testops skill [testops-mcp|testops-cli] [--all] [--dir …] [-g]`, а `aql.md` в них —
+один и тот же файл.
 
 ## Правила кода
 

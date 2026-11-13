@@ -12,7 +12,7 @@ MCP-сервер (stdio) поверх API Allure TestOps: проекты, тес
 npx -y @gribanoveu/mcp-testops                                         # Node 18+, без установки
 npm install -g @gribanoveu/mcp-testops                                 # глобально: команда mcp-testops
 uvx --from git+https://github.com/gribanoveu/mcp-testops mcp-testops   # через uv, Python 3.10+
-pip install https://github.com/gribanoveu/mcp-testops/releases/download/v0.1.9/mcp_testops-0.1.9-py3-none-any.whl
+pip install https://github.com/gribanoveu/mcp-testops/releases/download/v0.2.0/mcp_testops-0.2.0-py3-none-any.whl
 ```
 
 Обёртка `npx` Python не требует: при первом запуске она скачивает бинарник своей платформы (22–40 МБ)
@@ -114,30 +114,45 @@ claude mcp add testops -e TESTOPS_TOKEN=... -e TESTOPS_BASE_URL=https://testops.
 
 ## Скилл для агента
 
-Рядом с сервером лежит скилл для модели: карта из 30 инструментов, готовые цепочки, формы аргументов и
-референс AQL (`aql.md` — поля, операторы, даты, подполя). Английский, как и docstring инструментов.
+Скиллов два, и нужен один из них — они про одно и то же, но по-разному:
+
+| Скилл | Как работает | Когда брать |
+|---|---|---|
+| `testops-mcp` | агент вызывает 30 инструментов зарегистрированного MCP-сервера | обычный случай: посмотреть, что есть, менять аккуратно |
+| `testops-cli` | агент выполняет `... call <tool> '<json>'` в shell | сервер не нужен или контекст дорог: 29 143 символа описаний инструментов не висят в каждом запросе |
+
+У обоих рядом лежит `aql.md`: поля тест-кейсов, результатов и запусков, операторы, даты, подполя.
+Английский, как и docstring инструментов.
 
 ```bash
-npx -y skills add gribanoveu/mcp-testops --skill testops-mcp   # Skills CLI, в проект; -g — глобально
-npx -y @gribanoveu/mcp-testops skill -g                         # из npm-пакета, в ~/.agents/skills
+npx -y skills add gribanoveu/mcp-testops --skill testops-mcp    # Skills CLI, в проект; -g — глобально
+npx -y @gribanoveu/mcp-testops skill                            # из npm-пакета: testops-mcp
+npx -y @gribanoveu/mcp-testops skill testops-cli -g              # CLI-вариант, в ~/.agents/skills
+npx -y @gribanoveu/mcp-testops skill --all -g                    # оба
 ```
 
-Скилл едет внутри npm-пакета и лежит в [каталоге Kibo](https://github.com/gribanoveu/kibo-agent-catalog)
+Скиллы едут внутри npm-пакета и лежат в [каталоге Kibo](https://github.com/gribanoveu/kibo-agent-catalog)
 рядом с записью MCP-сервера.
+
+## Без MCP: вызов из терминала
+
+Сервер умеет работать одноразовой CLI — тот же код, тот же ответ, но без регистрации в клиенте:
+
+```bash
+npx -y @gribanoveu/mcp-testops call --list                                  # 30 инструментов
+npx -y @gribanoveu/mcp-testops call --schema list_launches                  # схема аргументов
+npx -y @gribanoveu/mcp-testops call list_projects '{"search": "wowtax"}'   # вызов
+```
+
+То же из Python-пакета: `python -m mcp_testops call …`. stdout — только ответ инструмента, логи идут в
+stderr. Код возврата `0` — инструмент ответил (даже если внутри `{"ok": false, …}`), `1` — ошибка
+протокола или аргументы не JSON. Для агента такой режим описан в скилле `testops-cli`.
 
 ## Разработка
 
 ```bash
 pip install -e ".[test]"
-pytest -q          # 63 теста: 62 passed, 1 skipped — контрактный, пока нет снимка спеки
-```
-
-Любой инструмент можно позвать из терминала — так же, как это сделает клиент:
-
-```bash
-python scripts/call.py --list                                  # 30 инструментов
-python scripts/call.py list_projects '{"search": "wowtax"}'     # ответ как его увидит модель
-python scripts/call.py --schema list_launches                   # схема аргументов
+pytest -q          # 69 тестов: 68 passed, 1 skipped — контрактный, пока нет снимка спеки
 ```
 
 Сборка бинарников, `scripts/refresh_spec.sh` и публикация (trusted publishing по OIDC, staged-версии
