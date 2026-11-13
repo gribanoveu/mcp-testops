@@ -16,13 +16,15 @@ def list_projects(
 ) -> str:
     """List TestOps projects, ordered by name.
 
-    search: optional substring of the project name; favorite: only starred projects.
-    page starts at 0, size is capped at 100. Returns {content, totalElements, totalPages, number}
-    with id, name, abbr, isPublic, isVersioned, launchCount, automationPercent per project.
+    search: substring of the project name, filtered by the server (the parameter is query there;
+    its own search= is ignored and answers 400 on non-ASCII names). favorite: only starred
+    projects. page starts at 0, size is capped at 100. Returns {content, totalElements,
+    totalPages, number} with id, name, abbr, isPublic, isVersioned, launchCount,
+    automationPercent per project.
     """
     res = _paged(
         "/api/project",
-        {"search": search or None, "favorite": True if favorite else None},
+        {"query": search or None, "favorite": True if favorite else None},
         page=page,
         size=size,
         sort="name,ASC",

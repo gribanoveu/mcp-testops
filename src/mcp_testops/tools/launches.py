@@ -3,7 +3,7 @@
 from ..bodies import _bulk_run_body, _launch_body, _test_result_body
 from ..client import TestOpsError, _api, _paged
 from ..config import DEFAULT_PAGE_SIZE
-from ..helpers import _answer, _guard, _ids, _json_arg, _pick, _pid, _statistic
+from ..helpers import _answer, _aql_text, _guard, _ids, _json_arg, _pick, _pid, _statistic
 from ..server import mcp, _write
 
 
@@ -25,6 +25,7 @@ LAUNCH_KEYS = (
 def list_launches(
     project_id: int | None = None,
     search: str = "",
+    rql: str = "",
     filter_id: int | None = None,
     page: int = 0,
     size: int = DEFAULT_PAGE_SIZE,
@@ -36,16 +37,23 @@ def list_launches(
     skipped, unknown} or StatisticDto with inProgress, pending and total; it is absent when
     the launch shape carries none. The API answers with two different launch shapes; both
     are read into this summary.
+
+    search narrows by launch name: it becomes the launch AQL name ~= "<search>" on
+    /api/launch/__search. rql takes a launch AQL query instead (name ~= "release", tag =
+    "smoke", job = "jenkins_master", closed = true, ev["OS"] = "Linux", createdDate >
+    1672531200000); rql wins over search. A plain search= on the launch list is ignored by
+    the stand and answers 400 on dates, so filtering goes through AQL.
     project_id defaults to TESTOPS_PROJECT_ID; sort defaults to "created_date,DESC".
     """
     pid = _pid(project_id)
-    res = _paged(
-        "/api/launch",
-        {"projectId": pid, "search": search or None, "filterId": filter_id},
-        page=page,
-        size=size,
-        sort=sort,
-    )
+    query = (rql or "").strip()
+    if not query and (search or "").strip():
+        query = f'name ~= "{_aql_text(search.strip())}"'
+    if query:
+        path, params = "/api/launch/__search", {"projectId": pid, "rql": query}
+    else:
+        path, params = "/api/launch", {"projectId": pid, "filterId": filter_id}
+    res = _paged(path, params, page=page, size=size, sort=sort)
     content = []
     for item in res["content"]:
         summary = _pick(item, ("id", "name", "closed", "createdDate"))
@@ -53,7 +61,10 @@ def list_launches(
             summary["statistic"] = _statistic(item["statistic"])
         content.append(summary)
     res["content"] = content
-    return {"ok": True, "projectId": pid, **res}
+    answer = {"ok": True, "projectId": pid, **res}
+    if query:
+        answer["rql"] = query
+    return answer
 
 
 @mcp.tool()

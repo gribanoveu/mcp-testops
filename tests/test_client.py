@@ -99,6 +99,56 @@ def test_list_launches_reads_launch_shape(api):
     assert "statistic" not in answer["content"][0]
 
 
+def test_list_launches_search_goes_through_aql(api):
+    """search= on /api/launch is ignored by the stand; /api/launch/__search with rql filters."""
+    seen = {}
+
+    def handler(request):
+        seen["path"] = request.url.path
+        seen["query"] = dict(request.url.params)
+        return httpx.Response(200, json={"content": [], "totalElements": 0, "totalPages": 0, "number": 0})
+
+    api(handler)
+    answer = json.loads(testops.list_launches(project_id=65, search='IDE "x"'))
+    assert seen["path"] == "/api/launch/__search"
+    assert seen["query"]["rql"] == 'name ~= "IDE \\"x\\""'
+    assert "search" not in seen["query"]
+    assert answer["rql"] == seen["query"]["rql"]
+
+
+def test_list_launches_rql_wins_over_search(api):
+    seen = {}
+
+    def handler(request):
+        seen["query"] = dict(request.url.params)
+        return httpx.Response(200, json={"content": [], "totalElements": 0, "totalPages": 0, "number": 0})
+
+    api(handler)
+    testops.list_launches(project_id=65, search="IDE", rql='tag = "smoke"')
+    assert seen["query"]["rql"] == 'tag = "smoke"'
+
+
+def test_list_test_plans_filters_the_page_itself(api):
+    """The plan listing has no text filter: search= 400s and query= never narrows."""
+    seen = {}
+    page = {
+        "content": [{"id": 1, "name": "Smoke plan"}, {"id": 2, "name": "Regress plan"}],
+        "totalElements": 2,
+        "totalPages": 1,
+        "number": 0,
+    }
+
+    def handler(request):
+        seen["query"] = dict(request.url.params)
+        return httpx.Response(200, json=page)
+
+    api(handler)
+    answer = json.loads(testops.list_test_plans(project_id=65, search="REGRESS"))
+    assert "search" not in seen["query"]
+    assert [row["id"] for row in answer["content"]] == [2]
+    assert answer["totalElements"] == 2
+
+
 def test_add_test_result_rejects_status_without_a_request(api):
     api(lambda request: pytest.fail("invalid status must not reach the stand"))
     answer = json.loads(testops.add_test_result(launch_id=10, name="x", status="ok"))
@@ -575,7 +625,8 @@ def test_statistic_dict_form_keeps_its_keys(api):
     assert answer["content"][0]["statistic"] == {"passed": 3, "inProgress": 1, "total": 4}
 
 
-def test_list_projects_sends_search_and_sort(api):
+def test_list_projects_sends_query_and_sort(api):
+    """The stand filters projects by query=; its own search= is ignored and 400s on Cyrillic."""
     seen = {}
 
     def handler(request):
@@ -584,7 +635,8 @@ def test_list_projects_sends_search_and_sort(api):
 
     api(handler)
     testops.list_projects(search="ops", favorite=True)
-    assert seen["query"]["search"] == "ops"
+    assert seen["query"]["query"] == "ops"
+    assert "search" not in seen["query"]
     assert seen["query"]["favorite"] == "true"
     assert seen["query"]["sort"] == "name,ASC"
 

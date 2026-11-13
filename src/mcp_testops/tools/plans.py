@@ -18,19 +18,21 @@ def list_test_plans(
 ) -> str:
     """List test plans of a project: id, name, projectId, baseRql, testCasesCount.
 
-    project_id defaults to TESTOPS_PROJECT_ID; search narrows by name.
+    project_id defaults to TESTOPS_PROJECT_ID. search filters the returned page by name on the
+    client: the API has no text filter for plans - its own search= answers 400 on most strings
+    and never narrows a list - so totalElements stays the project-wide count and content holds
+    the matches of this page.
     """
     pid = _pid(project_id)
-    res = _paged(
-        "/api/testplan",
-        {"projectId": pid, "search": search or None, "treeId": tree_id},
-        page=page,
-        size=size,
-    )
-    res["content"] = [
+    res = _paged("/api/testplan", {"projectId": pid, "treeId": tree_id}, page=page, size=size)
+    rows = [
         _pick(item, ("id", "name", "projectId", "baseRql", "testCasesCount"))
         for item in res["content"]
     ]
+    if (search or "").strip():
+        needle = search.strip().lower()
+        rows = [row for row in rows if needle in str(row.get("name", "")).lower()]
+    res["content"] = rows
     return {"ok": True, "projectId": pid, **res}
 
 

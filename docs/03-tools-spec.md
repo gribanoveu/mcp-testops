@@ -64,9 +64,13 @@
 
 ### `list_projects(search: str = None, favorite: bool = None, page: int = 0, size: int = 50) -> str`
 
-`GET /api/project` с `params={search?, favorite?, page, size, sort="name,ASC"}`.
+`GET /api/project` с `params={query?, favorite?, page, size, sort="name,ASC"}`.
 Возвращает `{content:[{id, name, abbr, isPublic, isVersioned, launchCount, automationPercent}], totalElements, totalPages, number}`.
 Не отдавать `descriptionHtml`.
+
+**Проверено на стенде (13.11.2026):** фильтрует только `query`. Собственный `search` проекта
+список не сужает и на не-ASCII имени отвечает `400 invalid search`. Инструмент оставляет в сигнатуре
+`search` (так ждёт модель), но шлёт его как `query`.
 
 ### `get_project(project_id: int) -> str`
 
@@ -169,6 +173,11 @@ attachment_id: int = None, shared_step_id: int = None) -> str`
 
 `GET /api/testplan` → `{content:[{id, name, projectId, baseRql, testCasesCount}], ...}`.
 
+**Проверено на стенде (13.11.2026):** текстового фильтра у планов нет — `search` отвечает `400` на
+большинстве строк и никогда не сужает, `query` игнорируется, `/api/testplan/__search` не существует.
+Поэтому `search` фильтрует уже полученную страницу на клиенте, а `totalElements` остаётся общим
+счётом проекта — docstring обязан это сказать.
+
 ### `get_test_plan(test_plan_id: int) -> str`
 
 `GET /api/testplan/{test_plan_id}` → `{id, name, projectId, baseRql, testCasesCount, treeSelection}`.
@@ -190,11 +199,16 @@ attachment_id: int = None, shared_step_id: int = None) -> str`
 
 ## 5. Запуски и результаты
 
-### `list_launches(project_id=None, search=None, filter_id=None, page=0, size=50, sort=None) -> str`
+### `list_launches(project_id=None, search=None, rql=None, filter_id=None, page=0, size=50, sort=None) -> str`
 
 `GET /api/launch` → `oneOf(PageLaunchPreviewDto, PageLaunchDto)`. Разбираем терпимо: общие поля
 (`id`, `name`, `projectId`, `closed`, `createdDate`) + `statistic` при наличии. Возвращаем компактно:
 `{id, name, closed, createdDate, statistic:{passed, failed, broken, skipped, unknown}}`.
+
+**Проверено на стенде (13.11.2026):** `search` у `/api/launch` не фильтрует, а на строке с дефисом
+отвечает `400`; `filterId` тоже проигнорирован. Фильтрует AQL: `/api/launch/__search` с `rql`
+(поля `name`, `tag`, `job`, `closed`, `ev["..."]`, `createdDate`). Поэтому при заданном `search` или
+`rql` инструмент идёт в `__search`, а `search` превращается в `name ~= "…"`.
 
 ### `get_launch(launch_id: int) -> str`
 
