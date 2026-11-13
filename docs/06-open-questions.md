@@ -16,16 +16,23 @@ https://testops.net/api/project?size=1` → `200`. Контроль: тот же
 **Влияет на:** README, docstring клиента, тесты (в тестах токен фиктивный — нужен признак «какой заголовок
 считать правильным»).
 
-## 2. Синтаксис AQL
+## 2. Синтаксис AQL — закрыт
 
-**Что неизвестно.** Спецификация не описывает грамматику `rql`: какие поля и операторы доступны
-(`name ~ "x"`, `status.name = "…"`, `tag.name`, `automated = true`, `AND`/`OR`, кавычки, кириллица).
+**Ответ (проверено на живом стенде, `CORP-WOWTAX`, 13.11.2026).** Грамматика — как в
+[документации AQL](https://docs.qameta.io/reference/aql), и стенд принимает её без отклонений:
 
-**Как закрыть:** набор пробных запросов через `GET /api/testcase/query/validate?projectId&rql=…` —
-он отдаёт `{valid, count}` и не требует ничего, кроме чтения. Собрать рабочий минимум и записать его
-в docstring `search_test_cases`.
+- поля кейса: `id`, `name`, `tag`, `status`, `workflow`, `layer`, `automation`, `flaky`, `muted`,
+  `issue`, `member`, `role["Owner"]`, `cf["Epic"]`, `cfv`, `testPlan`, `createdDate`, `createdBy`;
+- подстрока — только `~=`: `name ~= "логин"`; `=`, `!=`, `in [...]`, `not`, `and`, `or`, скобки,
+  числовые `>`, `<`, `>=`, `<=`;
+- `tag = "smoke"` (не `tag.name`), `status = "Active"` (не `status.name`), `automation = true`
+  (не `automated`), `layer = "API"` (не `testLayer`);
+- даты — epoch-миллисекунды без кавычек: `createdDate > 1672531200000`;
+- `validate` отвечает `{valid, count}` на корректный запрос и `{valid: false}` на любой другой,
+  `__search` в этом случае отдаёт `400 invalid.aql`.
 
-**Влияет на:** качество поиска агентом; на то, заменит ли AQL клиентскую фильтрацию (Д2).
+Ошибка в доке (`name ~ "…"`) стоила того, что `search_test_cases(name=…)` не работал вовсе:
+исправлено в `~=` и в docstring добавлена рабочая шпаргалка.
 
 ## 3. Как опрашивать асинхронные задания (`202`)
 

@@ -43,7 +43,7 @@
    не-JSON при `2xx` → ошибка.
 5. `TESTOPS_READ_ONLY` — write-инструменты не регистрируются.
 6. **Д1**: `run_test_cases` → `leafsInclude` (и `ids` разбирается в список).
-7. **Д2**: `search_test_cases(name=…)` → AQL `name ~ "…"` через `__search`, клиентскую выгрузку удалить.
+7. **Д2**: `search_test_cases(name=…)` → AQL `name ~= "…"` через `__search`, клиентскую выгрузку удалить.
 8. **Д3**: docstring `get_test_case` без обещания шагов + `get_test_case_steps`.
 9. Контрактные тесты:
    - `tests/test_contract.py`: каждое тело, собираемое инструментами, валидируется схемой из
@@ -83,7 +83,7 @@
   выполняется только именованными инструментами: `search_test_cases` → `get_test_case` →
   `get_test_case_steps` → `get_test_case_history` → `get_test_result`;
 - тест на каждый новый инструмент с записанным ответом (MockTransport), включая форму `LaunchPreviewDto`;
-- живой смоук: `list_projects` → `list_reference("workflow", 65)` → `search_test_cases(rql='name ~ "a"')`.
+- живой смоук: `list_projects` → `list_reference("workflow", 65)` → `search_test_cases(rql='name ~= "a"')`.
 
 ## M3. Write-контур прогонов
 

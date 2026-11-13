@@ -26,7 +26,7 @@ MCP-сервер (stdio) поверх API Allure TestOps: проекты, тес
 
 Что стоит знать до первого вызова:
 
-- API называет AQL полем `rql`. `search_test_cases(name=...)` превращает имя в запрос `name ~ "…"` на
+- API называет AQL полем `rql`. `search_test_cases(name=...)` превращает имя в запрос `name ~= "…"` на
   сервере; `validate_aql` проверяет запрос до поиска и отдаёт `{valid, count}`.
 - `TestCaseDto` не содержит сценария — шаги читаются `get_test_case_steps`.
 - `get_test_case_history` отвечает на «в каких прогонах гонялся этот кейс».

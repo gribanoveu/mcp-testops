@@ -169,7 +169,7 @@ def test_post_is_not_retried(api, monkeypatch):
 
 def test_get_test_case_steps_builds_tree(api):
     scenario = {
-        "root": {"id": 0, "children": [1, 2]},
+        "root": {"id": 0, "body": "Prepare", "children": [1, 2]},
         "scenarioSteps": {
             "1": {"id": 1, "body": "Open the form", "children": [3]},
             "2": {"id": 2, "body": "Close the form", "children": []},
@@ -178,10 +178,28 @@ def test_get_test_case_steps_builds_tree(api):
     }
     api(lambda request: httpx.Response(200, json=scenario))
     answer = json.loads(testops.get_test_case_steps(42))
-    steps = answer["steps"][0]["children"]
-    assert [step["id"] for step in steps] == [1, 2]
-    assert steps[0]["children"] == [
+    root = answer["steps"][0]
+    assert root["body"] == "Prepare"
+    assert [step["id"] for step in root["children"]] == [1, 2]
+    assert root["children"][0]["children"] == [
         {"id": 3, "body": "Fill the login", "expectedResult": "field is filled", "children": []}
+    ]
+
+
+def test_get_test_case_steps_of_container_root_is_flat(api):
+    """The stand's root carries only children; it must not become a step of its own."""
+    scenario = {
+        "root": {"children": [1, 2]},
+        "scenarioSteps": {
+            "1": {"id": 1, "body": "Open the form", "children": []},
+            "2": {"id": 2, "body": "Close the form", "children": []},
+        },
+    }
+    api(lambda request: httpx.Response(200, json=scenario))
+    answer = json.loads(testops.get_test_case_steps(42))
+    assert answer["steps"] == [
+        {"id": 1, "body": "Open the form", "children": []},
+        {"id": 2, "body": "Close the form", "children": []},
     ]
 
 
@@ -190,6 +208,14 @@ def test_get_test_case_steps_raw_form(api):
     api(lambda request: httpx.Response(200, json=scenario))
     answer = json.loads(testops.get_test_case_steps(42, as_tree=False))
     assert answer == {"ok": True, "testCaseId": 42, "scenarioSteps": scenario["scenarioSteps"]}
+
+
+def test_get_test_case_steps_of_empty_scenario_is_empty(api):
+    """A live case without steps answers {}, and a bare {"children": []} root must not become one."""
+    for payload in ({"scenarioSteps": {}, "root": {"children": []}}, {"scenarioSteps": {}}, {}):
+        api(lambda request: httpx.Response(200, json=payload))
+        answer = json.loads(testops.get_test_case_steps(42))
+        assert answer == {"ok": True, "testCaseId": 42, "steps": []}
 
 
 def test_search_by_name_builds_aql(api):
@@ -201,8 +227,8 @@ def test_search_by_name_builds_aql(api):
 
     api(handler)
     answer = json.loads(testops.search_test_cases(project_id=65, name="login"))
-    assert answer["rql"] == 'name ~ "login"'
-    assert seen["query"]["rql"] == 'name ~ "login"'
+    assert answer["rql"] == 'name ~= "login"'
+    assert seen["query"]["rql"] == 'name ~= "login"'
     assert "page" in seen["query"]
 
 
@@ -338,11 +364,11 @@ def test_validate_aql_sends_query(api):
         return httpx.Response(200, json={"valid": True, "count": 7})
 
     api(handler)
-    answer = json.loads(testops.validate_aql(project_id=65, rql='name ~ "l"'))
+    answer = json.loads(testops.validate_aql(project_id=65, rql='tag = "smoke"'))
     assert answer == {"ok": True, "projectId": 65, "valid": True, "count": 7}
     assert seen["path"] == "/api/testcase/query/validate"
     assert seen["query"]["projectId"] == "65"
-    assert seen["query"]["rql"] == 'name ~ "l"'
+    assert seen["query"]["rql"] == 'tag = "smoke"'
 
 
 def test_validate_aql_requires_rql(api):
@@ -403,7 +429,7 @@ def test_search_escapes_quotes_in_name(api):
 
     api(handler)
     testops.search_test_cases(project_id=65, name='a" or 1=1')
-    assert seen["rql"] == 'name ~ "a\\" or 1=1"'
+    assert seen["rql"] == 'name ~= "a\\" or 1=1"'
 
 
 def test_http_builds_one_configured_client(monkeypatch):
@@ -623,10 +649,21 @@ def test_list_reference_custom_field_is_project_scoped(api):
     assert answer["content"] == [{"id": 12, "name": "Severity"}]
 
 
-def test_list_reference_tag_is_flat_and_filtered_here(api):
-    api(lambda request: httpx.Response(200, json=[{"id": 3, "name": "smoke"}, {"id": 4, "name": "regress"}]))
-    answer = json.loads(testops.list_reference("tag", query="SMOKE"))
-    assert answer == {"ok": True, "kind": "tag", "content": [{"id": 3, "name": "smoke"}]}
+def test_list_reference_tag_asks_the_server_to_filter(api):
+    """The whole tag dictionary is 224k entries; /api/tag/suggest filters and pages it."""
+    seen = {}
+
+    def handler(request):
+        seen["path"] = request.url.path
+        seen["query"] = dict(request.url.params)
+        return httpx.Response(200, json={"content": [{"id": 3, "name": "smoke", "extra": 1}], "last": True})
+
+    api(handler)
+    answer = json.loads(testops.list_reference("tag", query="smoke", page=0, size=5))
+    assert seen["path"] == "/api/tag/suggest"
+    assert seen["query"]["query"] == "smoke"
+    assert seen["query"]["size"] == "5"
+    assert answer["content"] == [{"id": 3, "name": "smoke"}]
 
 
 def test_list_reference_rejects_unknown_kind(api):

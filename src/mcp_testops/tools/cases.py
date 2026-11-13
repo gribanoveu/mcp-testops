@@ -99,10 +99,26 @@ def get_test_case_steps(test_case_id: int, as_tree: bool = True) -> str:
     root = data.get("root") or {}
     if isinstance(root, int):
         root = by_id.get(str(root)) or {}
-    if root:
+    # The stand wraps the first-level steps in a container root: {"children": [...]} and nothing
+    # of its own. Returning it as one more step only adds a level to unwrap, so an id alone does
+    # not make the root a step - only content of its own does.
+    root_is_step = bool(root) and any(
+        root.get(key) for key in ("body", "expectedResult", "attachmentId", "sharedStepId")
+    )
+    if not by_id:
+        # A case without a scenario answers an empty map and a bare {"children": []} root;
+        # walking that would invent one step with every field null.
+        steps = []
+    elif root_is_step:
         steps = [_step_node(root, by_id)]
+    elif root.get("children"):
+        steps = [
+            _step_node(by_id[str(child)], by_id, frozenset({str(child)}))
+            for child in root["children"]
+            if str(child) in by_id
+        ]
     else:
-        steps = [_step_node(step, by_id, frozenset({step.get("id")})) for step in _scenario_roots(by_id)]
+        steps = [_step_node(step, by_id, frozenset({str(step.get("id"))})) for step in _scenario_roots(by_id)]
     return {"ok": True, "testCaseId": test_case_id, "steps": steps}
 
 
@@ -160,9 +176,20 @@ def search_test_cases(
 ) -> str:
     """Search test cases with AQL (the API calls it rql) and return full cases.
 
-    Give either rql or name. name becomes the AQL query name ~ "<name>" on the server,
-    nothing is filtered client-side. Examples (syntax to be verified on the stand):
-    name ~ "login", status.name = "Draft", tag.name = "smoke".
+    Give either rql or name. name becomes the AQL query name ~= "<name>" on the server
+    (substring match), nothing is filtered client-side.
+
+    Test-case AQL, as the stand accepts it (docs.qameta.io/reference/aql):
+      name ~= "login" (substring), name = "Login smoke" (exact), name != "x"
+      tag = "smoke", tag in ["smoke", "regress"], not tag = "smoke"
+      status = "Active", workflow = "Default Manual", layer = "API"
+      automation = true, flaky = false, muted = true
+      cf["Severity"] = "high", cfv in ["high"], role["Owner"] = "user1"
+      id >= 100, createdDate > 1672531200000 (dates are epoch milliseconds, unquoted)
+      conditions join with and / or, group with parentheses, negate with not
+
+    Field names are not the DTO's: automation (not automated), layer (not testLayer),
+    tag = "smoke" (not tag.name = "smoke"). Run validate_aql first when unsure.
     Returns {content: [case fields], rql, totalElements, totalPages, number}.
     """
     pid = _pid(project_id)
@@ -170,7 +197,7 @@ def search_test_cases(
     if not query:
         if not (name or "").strip():
             raise TestOpsError("rql or name is required")
-        query = f'name ~ "{_aql_text(name.strip())}"'
+        query = f'name ~= "{_aql_text(name.strip())}"'
     res = _paged(
         "/api/testcase/__search",
         {"projectId": pid, "rql": query, "deleted": True if deleted else None},

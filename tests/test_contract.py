@@ -104,14 +104,14 @@ def test_create_test_plan_body():
     body = testops._test_plan_body(
         project_id=65,
         name="Smoke plan",
-        base_rql='tag.name = "smoke"',
+        base_rql='tag = "smoke"',
         tree_selection={"leafsInclude": [1001, 1002], "inverted": False},
     )
     assert_valid("TestPlanCreateDto", body)
     assert body == {
         "projectId": 65,
         "name": "Smoke plan",
-        "baseRql": 'tag.name = "smoke"',
+        "baseRql": 'tag = "smoke"',
         "treeSelection": {"leafsInclude": [1001, 1002], "inverted": False},
     }
 

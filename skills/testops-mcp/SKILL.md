@@ -42,9 +42,9 @@ description: How to work with Allure TestOps through the testops MCP server - fi
 
 ### Найти кейс и прочитать его
 
-1. `search_test_cases(name="login")` — имя превращается в AQL `name ~ "login"` на сервере, клиентской
+1. `search_test_cases(name="login")` — имя превращается в AQL `name ~= "login"` на сервере, клиентской
    фильтрации нет.
-2. Для сложного условия: `validate_aql(rql='tag.name = "smoke"')` → `{valid, count}`; если `valid`,
+2. Для сложного условия: `validate_aql(rql='tag = "smoke"')` → `{valid, count}`; если `valid`,
    тот же `rql` в `search_test_cases`.
 3. `get_test_case(id)` → тексты, статус, теги; `get_test_case_steps(id)` → дерево шагов.
 
@@ -91,7 +91,7 @@ description: How to work with Allure TestOps through the testops MCP server - fi
 
 ### Тест-план
 
-`create_test_plan(name="Smoke", project_id=…, base_rql='tag.name = "smoke"',
+`create_test_plan(name="Smoke", project_id=…, base_rql='tag = "smoke"',
 tree_selection_json='{"leafsInclude": [1001]}')`; правка — `update_test_plan(id, name=…)`, тело
 собирается только из переданных полей, `clear=true` позволяет очистить строковое поле.
 

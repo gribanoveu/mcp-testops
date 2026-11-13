@@ -109,9 +109,12 @@ page=0, size=50, sort="") -> str`
 ### `search_test_cases(project_id=None, rql: str = "", name: str = "", deleted: bool = False, page=0, size=50, sort="") -> str`
 
 `GET /api/testcase/__search` с `projectId`, `rql`, `deleted`, `page`, `size`, `sort?` → `PageTestCaseDto`.
-Нужен один из `rql` или `name`: **`name` превращается в AQL `name ~ "…"` на сервере**, клиентской
+Нужен один из `rql` или `name`: **`name` превращается в AQL `name ~= "…"` на сервере**, клиентской
 выгрузки проекта нет (Д2), без обоих — ошибка `rql or name is required`. Docstring — с примерами:
-`name ~ "логин"`, `status.name = "Черновик"`, `tag.name = "smoke"`. Примеры пометить как проверяемые
+`name ~= "логин"`, `status = "Active"`, `tag = "smoke"`. Синтаксис сверен с живым стендом и с
+[документацией AQL](https://docs.qameta.io/reference/aql): подстрока — только `~=`, поля называются
+`automation` и `layer` (не `automated`/`testLayer`), тег — `tag = "x"` (не `tag.name`), даты — epoch-мс
+без кавычек
 на стенде (`06-open-questions.md`, вопрос 2), потому что синтаксис AQL спецификацией не описан.
 
 ### `validate_aql(project_id=None, rql: str, deleted: bool = False) -> str`

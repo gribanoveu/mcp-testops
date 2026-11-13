@@ -1,6 +1,6 @@
 """Tools: statuses and reference dictionaries."""
 
-from ..client import TestOpsError, _api, _paged
+from ..client import TestOpsError, _paged
 from ..config import DEFAULT_PAGE_SIZE, REFERENCE_KINDS
 from ..helpers import _guard, _pick, _pid
 from ..server import mcp
@@ -37,17 +37,18 @@ def list_reference(
 
     Returns id and name of every entry - they are what create_test_case wants in
     workflow_id, test_layer_id and custom_fields_json.
-    custom_field is project scoped (project_id defaults to TESTOPS_PROJECT_ID) and accepts
-    query; tag is a flat list without pagination, so query is applied here.
+    custom_field is project scoped (project_id defaults to TESTOPS_PROJECT_ID) and takes query.
+    tag is filtered and paged on the server: the full dictionary is hundreds of thousands of
+    entries, so pass query (a piece of the tag name) to get the ones you need.
     """
     if kind not in REFERENCE_KINDS:
         raise TestOpsError(f"kind must be one of {', '.join(REFERENCE_KINDS)}")
     if kind == "tag":
-        data = _api("GET", "/api/tag")
-        tags = [item for item in data if isinstance(item, dict)] if isinstance(data, list) else []
-        if query:
-            tags = [item for item in tags if query.lower() in str(item.get("name", "")).lower()]
-        return {"ok": True, "kind": kind, "content": [_pick(item, ("id", "name")) for item in tags]}
+        # /api/tag hands back the whole dictionary - 224 333 entries, 9.5 MB on a real stand -
+        # and ignores page, size and search. /api/tag/suggest filters and pages server-side.
+        res = _paged("/api/tag/suggest", {"query": query or None}, page=page, size=size)
+        res["content"] = [_pick(item, ("id", "name")) for item in res["content"]]
+        return {"ok": True, "kind": kind, **res}
     if kind == "workflow":
         path, params = "/api/workflow", {}
     elif kind == "testlayer":
