@@ -1,165 +1,169 @@
 ---
 name: testops-mcp
-description: How to work with Allure TestOps through the testops MCP server - find test cases and read their steps, search with AQL, run cases in a launch, record test results, read launch statistics and the history of a test case. Use when a task mentions Allure TestOps, test cases, test plans, launches, test results, or tools such as list_test_cases, search_test_cases, run_test_cases, add_test_result.
+description: Work with Allure TestOps through the testops MCP server - find test cases and read their steps, search with AQL, run cases in a launch, record test results, read launch statistics and the history of a test case. Use when a task mentions Allure TestOps, test cases, test plans, launches, test results, or tools such as list_test_cases, search_test_cases, run_test_cases, add_test_result.
 ---
 
-# Работа с Allure TestOps через MCP
+# Work with Allure TestOps through MCP
 
-Сервер отдаёт 30 инструментов: 17 read и 13 write. Любой ответ — JSON-строка: успех
-`{"ok": true, ...}`, ошибка `{"ok": false, "error": "HTTP 404 on GET /api/testcase/1: test case not found"}`.
-Исключений инструменты не бросают, поэтому ошибку читай из поля `error`, а не из падения вызова.
+The server exposes 30 tools: 17 read and 13 write. Every answer is a JSON string - success
+`{"ok": true, ...}`, failure `{"ok": false, "error": "HTTP 404 on GET /api/testcase/1: test case not found"}`.
+The tools never raise, so read the reason out of the `error` field instead of treating the call as broken.
 
-## 1. Не угадывай идентификаторы
+The full query language is in **aql.md** beside this file: every field of test cases, results and
+launches, the operators, dates, subfields and the examples. Read it before writing anything more
+complex than `tag = "smoke"`.
 
-`project_id` приходит из `list_projects`; если задан `TESTOPS_PROJECT_ID`, его можно не передавать вовсе.
-`status_id`, `workflow_id`, `test_layer_id` — только из справочников:
+## 1. Do not guess identifiers
 
-- `list_statuses(workflow_id=…)` → `{id, name, color}`;
+`project_id` comes from `list_projects`; when `TESTOPS_PROJECT_ID` is set on the server you can leave it
+out entirely. `status_id`, `workflow_id` and `test_layer_id` come from the reference tools only:
+
+- `list_statuses(workflow_id=...)` -> `{id, name, color}`;
 - `list_reference("workflow")`, `list_reference("testlayer")`,
-  `list_reference("custom_field", project_id=…)`.
+  `list_reference("custom_field", project_id=...)`.
 
-Придуманный `status_id` вернёт 400 или, хуже, создаст кейс с чужим статусом.
+An invented `status_id` answers 400 or, worse, creates a case in a status nobody meant.
 
-## 2. Сначала читай, потом меняй
+## 2. Read before you change
 
-| Вопрос | Инструмент |
+| The question | The tool |
 |---|---|
-| какие есть проекты | `list_projects(search=…)` |
-| список кейсов проекта (только строки) | `list_test_cases(project_id=…)` |
-| найти кейсы по имени или AQL | `search_test_cases(name=…)` / `search_test_cases(rql=…)` |
-| проверить AQL до поиска | `validate_aql(rql=…)` → `{valid, count}` |
-| один кейс целиком | `get_test_case(id)` |
-| шаги кейса | `get_test_case_steps(id)` |
-| где гонялся кейс | `get_test_case_history(test_case_id=…)` |
-| тест-планы | `list_test_plans(project_id=…)`, `get_test_plan(id)` |
-| запуски проекта | `list_launches(project_id=…)` |
-| результаты запуска | `list_test_results(launch_id=…)`, `get_test_result(id)`, `get_launch_statistic(launch_id)` |
+| which projects exist | `list_projects(search=...)` |
+| the cases of a project, rows only | `list_test_cases(project_id=...)` |
+| find cases by name or by AQL | `search_test_cases(name=...)` / `search_test_cases(rql=...)` |
+| check an AQL query before searching | `validate_aql(rql=...)` -> `{valid, count}` |
+| one case in full | `get_test_case(id)` |
+| the steps of a case | `get_test_case_steps(id)` |
+| where a case has run | `get_test_case_history(test_case_id=...)` |
+| test plans | `list_test_plans(project_id=...)`, `get_test_plan(id)` |
+| launches of a project | `list_launches(project_id=...)` |
+| results of a launch | `list_test_results(launch_id=...)`, `get_test_result(id)`, `get_launch_statistic(launch_id)` |
 
-`get_test_case` **не содержит шагов** — в ответе стоит `"steps_not_included": true`, шаги читает
-`get_test_case_steps`. В `list_test_cases` только строки: ни описания, ни шагов.
+`get_test_case` **does not carry steps** - the answer says `"steps_not_included": true`, and the steps
+come from `get_test_case_steps`. `list_test_cases` returns rows: no descriptions, no steps.
 
-## 3. Рецепты
+## 3. The five rules of AQL that cost the most
 
-### AQL: что стенд действительно принимает
+Checked against a live stand; the rest is in aql.md.
 
-Грамматика — [docs.qameta.io/reference/aql](https://docs.qameta.io/reference/aql), сверено на живом
-стенде. Подстрока — только `~=`, и имена полей не совпадают с полями DTO:
+- Substring matching is `~=` only: `name ~= "login"`. A bare `~` answers `400 invalid.aql`.
+- Field names are not the DTO's: `tag = "smoke"` (not `tag.name`), `status = "Active"` (not
+  `status.name`), `workflow = "Default Manual"`, `layer = "API"` (not `testLayer`), `automation = true`
+  (not `automated`).
+- `tag in ["smoke", "regress"]`, `not tag = "smoke"`, `!="`, `and` / `or` with parentheses.
+- Dates are epoch **milliseconds**, unquoted: `createdDate > 1672531200000`.
+- Validate first: `validate_aql` answers `{valid, count}`; on an invalid query the search itself answers
+  `400 invalid.aql` and the turn is wasted.
 
-- `name ~= "логин"` — подстрока; `name = "Точное имя"`, `name != "x"`;
-- `tag = "smoke"`, `tag in ["smoke", "regress"]`, `not tag = "smoke"` — не `tag.name`;
-- `status = "Active"`, `workflow = "Default Manual"`, `layer = "API"` — не `status.name`/`testLayer`;
-- `automation = true`, `flaky = false`, `muted = true` — не `automated`;
-- `cf["Severity"] = "high"`, `cfv in ["high"]`, `role["Owner"] = "user1"`;
-- `id >= 100`, `createdDate > 1672531200000` — даты epoch-мс, без кавычек;
-- условия — `and` / `or` (у `and` приоритет выше), группировка — скобками.
+## 4. Recipes
 
-Неверный запрос — `400 invalid.aql`, `validate_aql` отвечает `{valid: false}`. Поэтому сначала
-`validate_aql`, потом `search_test_cases`.
+### Find a case and read it
 
-### Найти кейс и прочитать его
+1. `search_test_cases(name="login")` - the name becomes AQL `name ~= "login"` on the server; nothing is
+   filtered client-side.
+2. For a compound condition: `validate_aql(rql='tag = "smoke"')` -> `{valid, count}`, then the same
+   `rql` in `search_test_cases`.
+3. `get_test_case(id)` -> texts, status, tags; `get_test_case_steps(id)` -> the step tree (a case
+   without a scenario answers `steps: []`; a step that points at a shared step carries
+   `sharedStep: {id, name, steps}`).
 
-1. `search_test_cases(name="login")` — имя превращается в AQL `name ~= "login"` на сервере, клиентской
-   фильтрации нет.
-2. Для сложного условия: `validate_aql(rql='tag = "smoke"')` → `{valid, count}`; если `valid`,
-   тот же `rql` в `search_test_cases`.
-3. `get_test_case(id)` → тексты, статус, теги; `get_test_case_steps(id)` → дерево шагов
-   (у кейса без сценария — `steps: []`).
+### Find out where a case ran
 
-### Узнать, в каких прогонах гонялся кейс
+`get_test_case_history(test_case_id=..., project_id=...)` -> rows of
+`{testResultId, launchId, launchName, status, start, duration}`. Details of one row come from
+`get_test_result(testResultId)`. Narrow it with `launch_id=...` (one launch) or `search=...`
+(result text).
 
-`get_test_case_history(test_case_id=…, project_id=…)` → строки
-`{testResultId, launchId, launchName, status, start, duration}`. Подробности строки —
-`get_test_result(testResultId)`. Сузить: `launch_id=…` (один запуск) или `search=…` (текст результата).
+### Run cases in a new launch
 
-### Прогнать кейсы в новом запуске
+1. Pick the cases: `search_test_cases(...)` -> their ids. For `run_test_cases` these are tree **leaf**
+   ids.
+2. `run_test_cases(launch_name="Regression 2026-11-09", ids="1001,1002")` -> `launchId`.
+   `leafs_include="[1001,1002]"` or a saved `filter_id=...` work instead of `ids`; passing `ids` and
+   `leafs_include` together is an error.
+3. `list_test_results(launch_id=...)` for the rows, `get_launch_statistic(launch_id=...)` for the
+   `{status: count}` summary without paging.
 
-1. Отобрать кейсы: `search_test_cases(...)` → их `id`. Для `run_test_cases` это id **листьев** дерева.
-2. `run_test_cases(launch_name="Регресс 2026-11-09", ids="1001,1002")` → `launchId`.
-   Вместо `ids` можно `leafs_include="[1001,1002]"` или сохранённый `filter_id=…`; `ids` и
-   `leafs_include` вместе — ошибка.
-3. `list_test_results(launch_id=…)` — что получилось; `get_launch_statistic(launch_id=…)` — сводка
-   `{status: count}` без листания.
+The launch is created **with manual results**, one per case.
 
-Прогон создаётся **с ручными результатами**: по одному на каждый кейс.
+### Record a result in an existing launch
 
-### Записать результат в существующий запуск
+1. `create_launch(name="Manual run", project_id=...)` -> `id`.
+2. `add_test_result(launch_id=..., name="Login smoke", status="failed", message="...", duration=1300,
+   test_case_id=...)` - `test_case_id` is required (the stand answers 500 without it), `status` is one
+   of `failed | broken | passed | skipped | unknown | in_progress`, anything else is refused before the
+   request. `duration`, `start` and `stop` are milliseconds.
+3. `close_launch(launch_id=...)` makes the results read-only; `reopen_launch(launch_id=...)` undoes that.
 
-1. `create_launch(name="Ручной прогон", project_id=…)` → `id`.
-2. `add_test_result(launch_id=…, name="Login smoke", status="failed", message="…", duration=1300,
-   test_case_id=…)` — `test_case_id` обязателен (без него стенд отвечает 500), `status` только из
-   `failed | broken | passed | skipped | unknown | in_progress`, иначе ошибка без запроса. `duration`,
-   `start`, `stop` — миллисекунды.
-3. `close_launch(launch_id=…)` — после закрытия результаты только читаются. Передумали —
-   `reopen_launch(launch_id=…)`.
+### Create a case with steps
 
-### Создать кейс с шагами
+1. `create_test_case(name="Login smoke", project_id=..., status_id=..., tags_json='[{"id": 3, "name": "smoke"}]')`
+   -> `id`. Tag ids come from `list_reference("tag", query=...)`.
+2. `add_test_case_step(test_case_id=..., body="Open the form")` - exactly one of `body`,
+   `attachment_id`, `shared_step_id`; `parent_step_id` nests the step.
+3. Verify with `get_test_case_steps(id)`.
 
-1. `create_test_case(name="Login smoke", project_id=…, status_id=…, tags_json='[{"id": 3, "name": "smoke"}]')`
-   → `id`. Справочники — по тегам из `list_reference`.
-2. `add_test_case_step(test_case_id=…, body="Открыть форму")` — ровно один из `body`, `attachment_id`,
-   `shared_step_id`; `parent_step_id` делает шаг вложенным.
-3. Проверить: `get_test_case_steps(id)`.
+### Clean up after yourself
 
-### Убрать за собой
+- `delete_test_case(id, force=True)` soft-deletes (`202`) and puts the case in the bin; there is no
+  restore tool;
+- `delete_launch(launch_id)` removes the launch with its results;
+- `delete_test_plan(test_plan_id)` leaves the cases alone.
 
-- `delete_test_case(id, force=True)` — мягкое удаление (`202`), кейс уходит в корзину; восстановления
-  инструментом нет;
-- `delete_launch(launch_id)` — вместе с результатами;
-- `delete_test_plan(test_plan_id)` — кейсы остаются.
+### A test plan
 
-### Тест-план
+`create_test_plan(name="Smoke", project_id=..., base_rql='tag = "smoke"',
+tree_selection_json='{"leafsInclude": [1001]}')`; change it with `update_test_plan(id, name=...)` - the
+body is built from the fields you pass only, and `clear=true` empties a string field.
 
-`create_test_plan(name="Smoke", project_id=…, base_rql='tag = "smoke"',
-tree_selection_json='{"leafsInclude": [1001]}')`; правка — `update_test_plan(id, name=…)`, тело
-собирается только из переданных полей, `clear=true` позволяет очистить строковое поле.
+## 5. How to pass arguments
 
-## 4. Как передавать аргументы
+- **Structured values go in as JSON strings**: `tags_json`, `links_json`, `members_json`,
+  `custom_fields_json`, `scenario_json`, `tree_selection_json`. The exact shape is in the tool's
+  docstring. `tags_json` -> `[{"id": 3, "name": "smoke"}]` (the id is required), `members_json` -> the
+  role as an object `{"id": 1, "name": "MEMBER"}`, `custom_fields_json` ->
+  `[{"customField": {"id": 12, "name": "Severity"}, "name": "high"}]`.
+- **Paging**: `page` starts at 0, `size` defaults to 50 and stops at 100; the answer carries
+  `totalElements`, `totalPages` and `number`, so a partial selection is visible.
+- **Sorting**: `sort="createdDate,DESC"` - one field, direction second; the stand refuses several
+  fields (`400 unsupported sort field`).
+- **References**: `list_reference("workflow")`, `"testlayer"`, `"custom_field"`; tags are
+  `list_reference("tag", query="smoke")` - the dictionary holds hundreds of thousands of entries, and
+  without `query` you get only its beginning.
+- **List filters**: `list_projects(search=...)` narrows on the server (the API parameter is `query`);
+  `list_launches(search=...)` becomes AQL, and anything complex goes through
+  `list_launches(rql='tag = "smoke" and closed = true')`; test plans have no server-side filter, so
+  `search` narrows the page that was already fetched.
+- **`clear`** in `update_test_case` / `update_test_plan`: without it an empty string means "leave the
+  field alone", with it "empty the field".
 
-- **Сложные структуры — JSON-строкой**: `tags_json`, `links_json`, `members_json`,
-  `custom_fields_json`, `scenario_json`, `tree_selection_json`. Точные формы — в docstring инструмента.
-  `tags_json` — `[{"id": 3, "name": "smoke"}]` (id обязателен), `members_json` — роль объектом
-  `{"id": 1, "name": "MEMBER"}`, `custom_fields_json` — `[{"customField": {"id": 12, "name": "Severity"},
-  "name": "high"}]`.
-- **Пагинация**: `page` с 0, `size` по умолчанию 50 и не больше 100; в ответе `totalElements`,
-  `totalPages`, `number` — по ним видно, что выборка не вся.
-- **Сортировка**: `sort="createdDate,DESC"` — одно поле, направление вторым; несколько полей стенд не
-  принимает (`400 unsupported sort field`).
-- **Справочники**: `list_reference("workflow")`, `"testlayer"`, `"custom_field"`; теги —
-  `list_reference("tag", query="smoke")`: словарь огромный (сотни тысяч), без `query` вернётся только его
-  начало.
-- **Фильтры списков**: `list_projects(search=…)` сужает сервер (параметр `query` внутри); у запусков
-  `list_launches(search=…)` превращается в AQL, а сложное — `list_launches(rql='tag = "smoke" and
-  closed = true')`; у планов фильтра на сервере нет, `search` сужает только полученную страницу.
+## 6. What the tools cannot do
 
-- **`clear`** в `update_test_case`/`update_test_plan`: без него пустая строка означает «не менять поле»,
-  с ним — «очистить».
+- There is no case tree, no shared-step editor, no defects, no attachments and no result import - and no
+  generic "any path under /api" tool to work around it: if the tool is missing, the task does not go
+  through this MCP.
+- `run_test_cases` takes no `rql`: a selection is `ids` / `leafs_include` / `filter_id`.
+- `get_test_case` has no steps, and attachments come back as `attachmentId`, never as content.
+- The HTML duplicates of text fields (`*Html`) are stripped - do not look for them.
 
-## 5. Чего инструменты не умеют
+## 7. When the answer is not what you expected
 
-- Нет дерева кейсов, общих шагов, дефектов, вложений и импорта результатов — и обходного
-  generic-вызова тоже нет: если инструмента нет, задача через MCP не решается.
-- В `run_test_cases` нет `rql`: выборка только `ids` / `leafs_include` / `filter_id`.
-- `get_test_case` не отдаёт шаги, вложения не отдаются содержимым (только `attachmentId`).
-- HTML-дубли текстов (`*Html`) вырезаны — не ищи их в ответе.
+- `HTTP 401` or `403` - authentication: the server sends `Authorization: Api-Token <token>` and the
+  stand may want `Bearer`. That is a configuration question, not a tool problem.
+- `HTTP 400` mentioning rql - the AQL syntax: `validate_aql` first, search second.
+- `{"ok": true, "accepted": true}` - the operation was accepted asynchronously (`202`/`204`). If an id
+  you need is missing from the answer, read the state back with `list_*` / `get_*`.
+- An empty `content` on a search - check `project_id`, and for deleted cases pass `deleted=true`.
 
-## 6. Когда ответ не тот
+## 8. Safety
 
-- `HTTP 401/403` — авторизация: сервер шлёт `Authorization: Api-Token <token>`, стенд может ждать
-  `Bearer`. Это вопрос конфигурации, а не инструмента.
-- `HTTP 400` с текстом про rql — синтаксис AQL: сначала `validate_aql`, потом поиск.
-- `{"ok": true, "accepted": true}` — операция принята асинхронно (`202`/`204`). Если нужен id, а его
-  нет в ответе — перечитай состояние через `list_*`/`get_*`.
-- Пустой `content` при поиске — проверь `project_id`, а для удалённых кейсов передай `deleted=true`.
+- Call `delete_*` only when the user asked for a deletion.
+- `force=true` only for what this same run created.
+- When the write tools are missing from the list, the server runs with `TESTOPS_READ_ONLY=true` - that is
+  deliberate, not a breakage: say that writing is off instead of looking for a way around it.
 
-## 7. Безопасность
+## 9. Is the server alive
 
-- `delete_*` — только по явной просьбе пользователя.
-- `force=true` — только для того, что создано в этом же сценарии.
-- Если write-инструментов нет в списке, сервер поднят с `TESTOPS_READ_ONLY=true` — это норма, а не
-  поломка; не ищи обходных путей, а скажи, что запись отключена.
-
-## 8. Как проверить, что сервер жив
-
-Самый дешёвый вызов — `list_projects(search="")`: ответ `{"ok": true, "content": [...]}` означает, что
-токен и адрес стенда верны. `{"ok": false, "error": "TESTOPS_TOKEN is not set"}` — сервер вообще не
-стартовал, это ошибка конфигурации клиента.
+The cheapest call is `list_projects(search="")`: `{"ok": true, "content": [...]}` means the token and the
+stand address are right. `{"ok": false, "error": "TESTOPS_TOKEN is not set"}` means the server did not
+start at all - a client configuration problem.
