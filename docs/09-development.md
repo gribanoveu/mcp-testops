@@ -89,6 +89,7 @@ testops-mcp/
 │   └── tools/            # проекты, кейсы, планы, запуски, справочники
 ├── tests/                # test_contract.py, test_client.py, test_tool_guards.py
 ├── scripts/refresh_spec.sh   # получить снимок спеки со стенда
+├── scripts/call.py           # вызвать любой инструмент из терминала
 ├── openapi/              # выборки из спеки: api-inventory.md, key-schemas.json
 ├── docs/                 # аналитика (01–06) и справочники (07–09)
 ├── packaging/entry.py    # точка входа для standalone-бинарника
@@ -98,6 +99,40 @@ testops-mcp/
 ├── CHANGELOG.md          # что сделано, по этапам
 ├── README.md             # как поставить и подключить
 └── pyproject.toml        # hatchling, mcp>=2,<3, httpx
+```
+
+## Вызов инструментов из терминала
+
+`scripts/call.py` поднимает сервер по stdio так же, как клиент, и печатает ответ инструмента — то,
+что увидит модель:
+
+```bash
+export TESTOPS_TOKEN=... TESTOPS_BASE_URL=https://testops.net TESTOPS_PROJECT_ID=657
+python scripts/call.py --list                                  # 30 инструментов и первые строки docstring
+python scripts/call.py --schema list_launches                  # схема аргументов
+python scripts/call.py list_projects '{"search": "wowtax"}'     # вызов, аргументы — JSON-объект
+```
+
+Запускать из окружения пакета (`.venv/bin/python`) — скрипт импортирует SDK `mcp`. Код возврата — `0`,
+если инструмент ответил; `1` — когда ответ получен на уровне протокола как ошибка (например,
+пропущен обязательный аргумент) или аргументы не разбираются как JSON. Наш стиль «ошибки — данные» это
+не меняет: `{"ok": false, "error": "HTTP 403 ..."}` — это ответ, и код возврата `0`, разбирать надо
+поле `error`.
+
+Два подводных камня, из-за которых скрипт выглядит именно так:
+
+- `anyio.run`, а не `asyncio.run`: stdio-транспорт SDK строит anyio task group, и под `asyncio.run` её
+  закрытие падает с `ExceptionGroup` уже после печати ответа (Python 3.14, anyio 4).
+- поля SDK — snake_case: `tool.input_schema`, `result.is_error` (не `inputSchema`/`isError`).
+
+Вместо скрипта можно и голым JSON-RPC — сервер читает stdin и пишет stdout:
+
+```bash
+printf '%s\n' \
+ '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2026-07-28","capabilities":{},"clientInfo":{"name":"cli","version":"1"}}}' \
+ '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+ '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+ | TESTOPS_TOKEN=dummy python -m mcp_testops
 ```
 
 ## Правила кода

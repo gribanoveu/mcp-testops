@@ -132,5 +132,13 @@ pip install -e ".[test]"
 pytest -q          # 63 теста: 62 passed, 1 skipped — контрактный, пока нет снимка спеки
 ```
 
+Любой инструмент можно позвать из терминала — так же, как это сделает клиент:
+
+```bash
+python scripts/call.py --list                                  # 30 инструментов
+python scripts/call.py list_projects '{"search": "wowtax"}'     # ответ как его увидит модель
+python scripts/call.py --schema list_launches                   # схема аргументов
+```
+
 Сборка бинарников, `scripts/refresh_spec.sh` и публикация (trusted publishing по OIDC, staged-версии
 в npm) — [docs/09-development.md](docs/09-development.md).
