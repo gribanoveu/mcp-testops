@@ -109,8 +109,10 @@ publisher. Состояние публикации описано в `docs/08-li
 Любой клиент, который умеет запускать локальную команду по stdio, использует ту же пару
 `command`/`args` плюс свой `env`:
 
-- **Claude Desktop** — `claude_desktop_config.json` с тем же объектом `mcpServers`;
-- **Claude Code** — `claude mcp add testops --env TESTOPS_TOKEN=... -- npx -y @gribanoveu/mcp-testops`;
+- **Claude Desktop** — `claude_desktop_config.json` с тем же объектом `mcpServers` (без
+  `"type": "stdio"`);
+- **Claude Code** — `claude mcp add testops -e TESTOPS_TOKEN=... -e TESTOPS_BASE_URL=https://testops.net
+  -- npx -y @gribanoveu/mcp-testops`, ключ `-s user` для всех проектов или `-s project` в `.mcp.json`;
 - **Kibo Agent** — страница Catalog: записи «Allure TestOps» (MCP-сервер и скилл) из
   [kibo-agent-catalog](https://github.com/gribanoveu/kibo-agent-catalog); значения `TESTOPS_*` он
   спросит при установке и запишет в `~/.kibo/mcp.json`.

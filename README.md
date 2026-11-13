@@ -66,8 +66,19 @@ pip install https://github.com/gribanoveu/mcp-testops/releases/download/v0.1.9/m
 - сервер видит **только** этот блок `env` — переменные вашей оболочки до него не доходят;
 - после сохранения перезагрузите конфиг (Customize → MCPs): в списке должно быть 30 инструментов.
 
-Варианты с абсолютным путём к бинарнику, с Python-пакетом и другие клиенты (Claude Desktop и прочие
-stdio-MCP) — [docs/07-clients.md](docs/07-clients.md).
+Варианты с абсолютным путём к бинарнику, с Python-пакетом и другие клиенты —
+[docs/07-clients.md](docs/07-clients.md).
+
+### Claude Code
+
+```bash
+claude mcp add testops -e TESTOPS_TOKEN=... -e TESTOPS_BASE_URL=https://testops.net \
+  -- npx -y @gribanoveu/mcp-testops
+```
+
+`-s user` — для всех проектов (`~/.claude.json`), `-s project` — в `.mcp.json` проекта. Проверить —
+`claude mcp list`. В Claude Desktop другой формат: `claude_desktop_config.json` с тем же объектом
+`mcpServers` (только без `"type": "stdio"`), пример — в [docs/07-clients.md](docs/07-clients.md).
 
 ## Скилл для агента
 
@@ -81,23 +92,6 @@ npx -y @gribanoveu/mcp-testops skill -g                         # из npm-па�
 
 Скилл едет внутри npm-пакета и лежит в [каталоге Kibo](https://github.com/gribanoveu/kibo-agent-catalog)
 рядом с записью MCP-сервера.
-
-## Документация
-
-| Документ | О чём |
-|---|---|
-| [docs/01-contract.md](docs/01-contract.md) | устройство API: авторизация, пагинация, ошибки, AQL, полиморфные ответы |
-| [docs/02-domain-model.md](docs/02-domain-model.md) | сущности и связи: Project → TestCase → TestPlan → Launch → TestResult |
-| [docs/03-tools-spec.md](docs/03-tools-spec.md) | все 30 инструментов: сигнатура, эндпоинт, тело, ответ |
-| [docs/04-current-implementation.md](docs/04-current-implementation.md) | разбор чужого примера и его ошибок (Д1–Д11) — «чего не делать» |
-| [docs/05-plan.md](docs/05-plan.md) | этапы M0–M4 и критерии приёмки |
-| [docs/06-open-questions.md](docs/06-open-questions.md) | что проверено на стенде и что осталось допущением |
-| [docs/07-clients.md](docs/07-clients.md) | установка и подключение: все варианты `command`, клиенты, каталог |
-| [docs/08-limitations.md](docs/08-limitations.md) | ограничения и риски: TLS, read-only, удаление, логи, Intel Mac |
-| [docs/09-development.md](docs/09-development.md) | тесты, сборка бинарника, снимок спеки, публикация, структура |
-
-Что сделано на каждом этапе — [CHANGELOG.md](CHANGELOG.md); правила работы над сервером —
-[AGENTS.md](AGENTS.md).
 
 ## Разработка
 
