@@ -168,9 +168,9 @@ def get_test_case_history(
     """Which launches ran a test case, and with what result.
 
     Answers "where was this case run": each row is {testResultId, launchId, launchName, status,
-    start, stop, duration, message, testedBy}. launch_id narrows to one launch, search narrows by
-    result text. project_id defaults to TESTOPS_PROJECT_ID. For the full result of one row use
-    get_test_result(testResultId).
+    start, stop, duration}. launch_id narrows to one launch, search narrows by result text.
+    project_id defaults to TESTOPS_PROJECT_ID. The row of this endpoint carries no message and
+    no testedBy - for those and the rest of the result, call get_test_result(testResultId).
     """
     pid = _pid(project_id)
     res = _paged(
