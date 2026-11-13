@@ -58,3 +58,7 @@ def test_call_refuses_to_start_without_a_token():
     result = call("--list", TESTOPS_TOKEN="")
     assert result.returncode == 1
     assert "TESTOPS_TOKEN is not set" in result.stderr
+    # The hint has to be actionable: the agent reads it in a terminal and has to know what to set.
+    assert "export TESTOPS_TOKEN" in result.stderr
+    assert "TESTOPS_BASE_URL" in result.stderr
+    assert "Per command" in result.stderr

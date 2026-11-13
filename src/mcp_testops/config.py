@@ -25,3 +25,13 @@ RETRY_BACKOFF = 0.5
 
 TEST_STATUSES = ("failed", "broken", "passed", "skipped", "unknown", "in_progress")
 REFERENCE_KINDS = ("workflow", "testlayer", "custom_field", "tag")
+
+# What to print when the token is missing: the same four lines serve the stdio server, where a
+# client reads them in its log, and the CLI, where the user reads them in the terminal.
+TOKEN_HINT = (
+    "TESTOPS_TOKEN is not set: the token goes to the stand as `Authorization: Api-Token <token>`.\n"
+    "  export TESTOPS_TOKEN=<api token>            # from your TestOps profile; never commit it\n"
+    "  export TESTOPS_BASE_URL=https://testops.net  # optional, this is the default\n"
+    "  export TESTOPS_PROJECT_ID=<id>              # optional, for tools called without project_id\n"
+    "  export TESTOPS_VERIFY_SSL=true              # optional, on a stand with a valid certificate"
+)

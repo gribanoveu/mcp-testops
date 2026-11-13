@@ -180,6 +180,18 @@ def test_error_carries_server_message(api):
     assert answer == {"ok": False, "error": "HTTP 404 on GET /api/testcase/1: test case not found"}
 
 
+def test_401_and_403_carry_an_auth_hint(api):
+    """Whoever reads the answer has to know that the fix is the token, not the tool."""
+    api(lambda request: httpx.Response(401, json={"message": "Unauthorized"}))
+    denied = json.loads(testops.get_project(65))["error"]
+    assert denied.startswith("HTTP 401 on GET /api/project/65: Unauthorized")
+    assert "Api-Token" in denied and "Bearer" in denied
+
+    api(lambda request: httpx.Response(403, json={"message": "Forbidden"}))
+    forbidden = json.loads(testops.get_project(65))["error"]
+    assert "no access to this project" in forbidden
+
+
 def test_non_json_success_is_an_error(api):
     api(lambda request: httpx.Response(200, text="<html>proxy</html>"))
     answer = json.loads(testops.get_test_case(1))

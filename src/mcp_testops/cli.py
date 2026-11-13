@@ -22,7 +22,7 @@ import anyio
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from .config import TOKEN
+from .config import TOKEN, TOKEN_HINT
 
 
 def _self_command() -> tuple[str, list[str]]:
@@ -69,7 +69,8 @@ def run_call(argv: list[str]) -> int:
         print(__doc__.strip())
         return 0
     if not TOKEN:
-        print("TESTOPS_TOKEN is not set", file=sys.stderr)
+        print(TOKEN_HINT, file=sys.stderr)
+        print("Per command, without exporting: TESTOPS_TOKEN=... python -m mcp_testops call --list", file=sys.stderr)
         return 1
     # anyio.run, not asyncio.run: the stdio transport of the SDK builds its transport with
     # anyio task groups, and under asyncio.run their teardown raises an ExceptionGroup after

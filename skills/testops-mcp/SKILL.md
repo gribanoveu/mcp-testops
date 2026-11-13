@@ -149,7 +149,9 @@ body is built from the fields you pass only, and `clear=true` empties a string f
 ## 7. When the answer is not what you expected
 
 - `HTTP 401` or `403` - authentication: the server sends `Authorization: Api-Token <token>` and the
-  stand may want `Bearer`. That is a configuration question, not a tool problem.
+  stand may want `Bearer`. That is a configuration question, not a tool problem. The error text now
+  carries that hint, along with the second cause: `403` also means this token has no access to that
+  project.
 - `HTTP 400` mentioning rql - the AQL syntax: `validate_aql` first, search second.
 - `{"ok": true, "accepted": true}` - the operation was accepted asynchronously (`202`/`204`). If an id
   you need is missing from the answer, read the state back with `list_*` / `get_*`.
@@ -162,8 +164,21 @@ body is built from the fields you pass only, and `clear=true` empties a string f
 - When the write tools are missing from the list, the server runs with `TESTOPS_READ_ONLY=true` - that is
   deliberate, not a breakage: say that writing is off instead of looking for a way around it.
 
-## 9. Is the server alive
+## 9. Is the server alive, and are the settings right
 
 The cheapest call is `list_projects(search="")`: `{"ok": true, "content": [...]}` means the token and the
-stand address are right. `{"ok": false, "error": "TESTOPS_TOKEN is not set"}` means the server did not
-start at all - a client configuration problem.
+stand address are right. Then read the failure, because each one has a different fix:
+
+- `{"ok": false, "error": "TESTOPS_TOKEN is not set: ... export TESTOPS_TOKEN=<api token> ..."}` — the
+  server reads its own environment only, never your shell or a `.env` in the project. The token belongs in
+  the client's `env` block (or its config dialog); where the client supports it, write
+  `"TESTOPS_TOKEN": "${env:TESTOPS_TOKEN}"` and keep the value outside the repository. If the user has a
+  token somewhere already — `~/.kibo/mcp.json`, `~/.cursor/mcp.json`, `~/.claude.json`, a project
+  `.mcp.json`, `mcpServers.*.env` — it can be reused; do not print it and do not commit it.
+- `401`/`403` — the token scheme or the access: the server sends `Api-Token`, the stand may want `Bearer`,
+  and a project the token cannot see answers `403` too.
+- `{"ok": false, "error": "project_id is required (or set TESTOPS_PROJECT_ID)"}` — pass `project_id`, or add
+  `TESTOPS_PROJECT_ID` to the same `env` block.
+- No tools at all in the client's list, or an error about the command — the client cannot start the
+  process: check the `command`/`args` (an absolute path for a binary or a virtualenv python), then the
+  client's log.

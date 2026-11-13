@@ -56,7 +56,12 @@ def _error_text(resp: httpx.Response) -> str:
     if isinstance(data, dict):
         message = str(data.get("message") or data.get("error") or "")
     where = f"{resp.request.method} {resp.request.url.path}"
-    return f"HTTP {resp.status_code} on {where}: {message or resp.reason_phrase}"
+    text = f"HTTP {resp.status_code} on {where}: {message or resp.reason_phrase}"
+    if resp.status_code in (401, 403):
+        # The two causes look the same from here: a token scheme the stand does not accept,
+        # or a token that has no access to this project (a foreign case answers 403 too).
+        text += " (auth: the token goes as Api-Token; if the stand wants Bearer that is a config change; 403 also means the token has no access to this project)"
+    return text
 
 
 def _send(method: str, path: str, params: dict | None = None, body: Any = None) -> httpx.Response:
