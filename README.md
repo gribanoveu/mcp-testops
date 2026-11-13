@@ -6,20 +6,25 @@ MCP-сервер (stdio) поверх API Allure TestOps: проекты, тес
 (`MCPServer` из `mcp.server`) и `httpx`; сервер не слушает портов — клиент запускает его подпроцессом.
 Лицензия MIT.
 
+**Два способа работать, выбирайте один.** Как MCP-сервер — 30 инструментов живут в клиенте, это удобно
+для долгой работы. Или как CLI: одна команда на вызов, сервер никуда не ставится и 30 описаний не висят
+в каждом запросе — `npx -y @gribanoveu/mcp-testops call list_projects '{"search": "login"}'`. Для агента
+второй способ описан скиллом `testops-cli`, первый — `testops-mcp` (см. «Скилл для агента»).
+
 ## Установка
 
 ```bash
 npx -y @gribanoveu/mcp-testops                                         # Node 18+, без установки
 npm install -g @gribanoveu/mcp-testops                                 # глобально: команда mcp-testops
 uvx --from git+https://github.com/gribanoveu/mcp-testops mcp-testops   # через uv, Python 3.10+
-pip install https://github.com/gribanoveu/mcp-testops/releases/download/v0.2.0/mcp_testops-0.2.0-py3-none-any.whl
+pip install https://github.com/gribanoveu/mcp-testops/releases/download/v0.2.1/mcp_testops-0.2.1-py3-none-any.whl
 ```
 
 Обёртка `npx` Python не требует: при первом запуске она скачивает бинарник своей платформы (22–40 МБ)
 из [Releases](https://github.com/gribanoveu/mcp-testops/releases) в `~/.cache/mcp-testops/` и дальше
 работает из него. Готовые бинарники лежат там же: darwin-arm64, linux-x64, linux-arm64, win32-x64.
 
-Версия закрепляется на любой форме: `npx -y @gribanoveu/mcp-testops@0.1.9`. Чем эти пути различаются,
+Версия закрепляется на любой форме: `npx -y @gribanoveu/mcp-testops@0.2.1`. Чем эти пути различаются,
 что делать на Intel Mac и какие клиенты поддерживаются — [docs/07-clients.md](docs/07-clients.md).
 
 ## Настройка

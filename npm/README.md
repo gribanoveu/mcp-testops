@@ -9,6 +9,18 @@ npx -y @gribanoveu/mcp-testops          # run without installing
 npm install -g @gribanoveu/mcp-testops  # or install it: the command is `mcp-testops`
 ```
 
+**Two ways in, pick one.** As an MCP server the 30 tools live in your client - good for a long working
+session. Or as a one-shot CLI: one command per call, nothing registered, and the 30 tool descriptions stay
+out of the context:
+
+```bash
+npx -y @gribanoveu/mcp-testops call --list                                   # what the 30 tools are
+npx -y @gribanoveu/mcp-testops call list_projects '{"search": "login"}'     # one call
+```
+
+For an agent the CLI way is described by the `testops-cli` skill, the server way by `testops-mcp` - both
+ship inside this package (`mcp-testops skill --all`).
+
 Client configuration — the same `command`/`args`/`env` shape any local MCP server takes:
 
 ```json
