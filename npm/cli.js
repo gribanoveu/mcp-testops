@@ -4,11 +4,14 @@
 // It runs the standalone binary of the matching platform from the GitHub release: no
 // Python, no build, one command. Nothing is ever written to stdout - stdout belongs to
 // the MCP protocol, so every message of this launcher goes to stderr.
+//
+// `mcp-testops skill` is the other way in: it copies the agent skill that ships inside
+// this package into a skills folder, so an installed package is enough on its own.
 
 "use strict";
 
 const { spawn } = require("node:child_process");
-const { chmodSync, createWriteStream, existsSync, mkdirSync } = require("node:fs");
+const { chmodSync, copyFileSync, createWriteStream, existsSync, mkdirSync, readdirSync } = require("node:fs");
 const { get } = require("node:https");
 const { homedir } = require("node:os");
 const { join } = require("node:path");
@@ -19,6 +22,31 @@ function fail(message) {
   process.stderr.write(`mcp-testops: ${message}\n`);
   process.exit(1);
 }
+
+function installSkill(args) {
+  const source = join(__dirname, "skills", "testops-mcp");
+  let target = join(".agents", "skills", "testops-mcp");
+  for (let i = 0; i < args.length; i += 1) {
+    if (args[i] === "-g" || args[i] === "--global") target = join(homedir(), ".agents", "skills", "testops-mcp");
+    else if (args[i] === "--dir") target = join(args[i += 1] || ".", "testops-mcp");
+    else if (args[i] === "-h" || args[i] === "--help") {
+      process.stdout.write(
+        "Usage: mcp-testops skill [--dir <folder>] [-g]\n\n" +
+          "Copies SKILL.md and aql.md into <folder>/testops-mcp (default .agents/skills,\n" +
+          "-g for ~/.agents/skills).\n",
+      );
+      process.exit(0);
+    } else fail(`unknown option ${args[i]}`);
+  }
+  if (!existsSync(join(source, "SKILL.md"))) fail(`this package carries no skill at ${source}`);
+  mkdirSync(target, { recursive: true });
+  const files = readdirSync(source).filter((name) => name.endsWith(".md"));
+  for (const name of files) copyFileSync(join(source, name), join(target, name));
+  process.stderr.write(`mcp-testops: skill -> ${target} (${files.join(", ")})\n`);
+  process.exit(0);
+}
+
+if (process.argv[2] === "skill") installSkill(process.argv.slice(3));
 
 function platformName() {
   const arch = process.arch === "arm64" ? "arm64" : "x64";

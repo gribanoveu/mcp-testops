@@ -60,7 +60,16 @@ requests only, 3 attempts on 429/500/502/503/504, writes are never retried), and
 
 The server comes with a skill that teaches a model how to use it: the map of the 30 tools, the
 ready-made chains, the JSON argument shapes, the AQL reference (`aql.md` beside `SKILL.md` — fields of
-test cases, results and launches, operators, epoch dates, subfields). Install it with the Skills CLI:
+test cases, results and launches, operators, epoch dates, subfields). Both files ship **inside this
+package**, so an installed package is enough:
+
+```bash
+npx -y @gribanoveu/mcp-testops skill        # -> ./.agents/skills/testops-mcp
+npx -y @gribanoveu/mcp-testops skill -g     # -> ~/.agents/skills/testops-mcp
+npx -y @gribanoveu/mcp-testops skill --dir .cursor/skills
+```
+
+The same skill installs straight from the repository with the Skills CLI:
 
 ```bash
 npx -y skills add gribanoveu/mcp-testops --skill testops-mcp

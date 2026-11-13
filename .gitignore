@@ -6,3 +6,4 @@ dist/
 dist-bin/
 build/
 .DS_Store
+npm/skills/
